@@ -83,7 +83,7 @@ async function Heckle({ params }: Pick<PageProps<"/h/[slug]">, "params">) {
     return (
       <>
         {heading}
-        <Waiting slug={h.slug} initial={h.status} />
+        <Waiting slug={h.slug} initial={h.status} roaster={roaster.id} roasterName={roaster.name} host={host} />
       </>
     );
   }

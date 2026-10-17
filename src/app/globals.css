@@ -167,6 +167,16 @@
 }
 .group:hover .splat { animation: splat 600ms cubic-bezier(0.3, 0.7, 0.2, 1); }
 
+/* The waiting room's scan line, sweeping the page being read. */
+@keyframes scan {
+  from { top: -15%; }
+  to { top: 100%; }
+}
+.scan {
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 22%, transparent) 70%, color-mix(in srgb, var(--accent) 70%, transparent) 98%, transparent);
+  animation: scan 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
 @keyframes pop {
   0% { transform: scale(0.6); opacity: 0; }
   60% { transform: scale(1.12); opacity: 1; }
@@ -185,5 +195,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .rise, .bob, .eq span, .land, .talking, .pop, .reveal, .splat { animation: none !important; }
+  .rise, .bob, .eq span, .land, .talking, .pop, .reveal, .splat, .scan { animation: none !important; }
 }
