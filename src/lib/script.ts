@@ -12,49 +12,59 @@ const ScriptSchema = z.object({
     .boolean()
     .describe("True only if the page is adult, hateful, violent, or obviously illegal. Then leave the rest short."),
   refuse_reason: z.string().describe("Why, in one short sentence, when refuse is true. Empty otherwise."),
-  intro: z.string().describe("The opener: one short line, in character, that gets a laugh on its own."),
+  intro: z.string().describe("The opener: walking on stage and reacting to the page on the screen. One or two short sentences that get a laugh on their own."),
   lines: z
     .array(
       z.object({
-        text: z.string().describe("One joke: a setup and a punchline about one thing on the page, spoken aloud. One to three short sentences."),
-        target: z
-          .string()
-          .nullable()
-          .describe("The key of the element this beat is about, from the element list, or null."),
+        text: z.string().describe("One bit of the set, spoken aloud: a one-liner, or a setup that pays off. One to four sentences. May use [beat] for a pause."),
+        targets: z
+          .array(z.string())
+          .describe(
+            "Keys of the exact elements this joke is about, from the element list: one, or two or three when the joke names several things (they get boxed together). Empty if no element on the list is exactly what the joke is about. Never pick a bigger container just because it's nearby.",
+          ),
       }),
     )
     .describe("Exactly eight jokes, roughly in the order the page reads, building to the strongest."),
   score: z.number().describe("Out of 10, one decimal. Most pages land between 4 and 7."),
-  top_burn: z.string().describe("The funniest line of the set, tightened to stand alone on a share card, under 120 characters."),
+  top_burn: z.string().describe("The funniest line of the set, tightened to stand alone on a share card, under 120 characters, without [beat]."),
   fix: z.string().describe("One sentence of genuinely useful advice, read aloud at the end, under 25 words. Not a joke."),
   fixes: z.array(z.string()).describe("Five concrete, specific improvements, each one sentence."),
 });
 
 export type ScriptResult = { refused: true; reason: string } | { refused: false; script: Script };
 
-const RULES = `This is a stand-up set, not a review with jokes in it. Write it the way a working comic writes a tight five: every line is built to get a laugh.
+const RULES = `You're doing a tight set at a comedy club where everyone in the room builds software. The landing page is up on the big screen behind you. Write it the way a real comic talks, not the way an AI writes jokes. Read it out loud in your head: if it sounds like a LinkedIn post or a listicle, throw it out.
 
-Comedy craft, every line:
-- Setup, then punchline. The surprising word goes last. Never explain the joke after it lands.
-- Specific beats general. Quote the page's real words and name its real elements. "Your headline uses 'synergy' and 'leverage' in the same sentence" beats "your copy is full of buzzwords".
-- Use comparisons that paint a picture: "a pricing table with the energy of a hostage note", "a hero image that looks like it was licensed from a bank's 2009 annual report".
-- Rule of three: two normal things, then a twist.
-- Act it out: imagine a visitor's inner monologue, or the meeting where this got approved, and quote it.
-- Misdirection: start a compliment, land an insult. Or start an insult, land a reluctant compliment.
-- Escalate: the set should get bigger as it goes. Save the strongest beat for last.
-- The intro is an opener that gets a laugh by itself, not a description of the page.
-- Call back to the opener in the final line if you can.
+How real comics sound:
+- They react. "Oh no." "Okay. Okay." "Wait, hold on." They notice something and you can hear them noticing it.
+- They talk to the room and to the builder: "Is the founder here? Hi. I'm so sorry." Crowd work, not narration.
+- Rhythm changes. A long setup that wanders, then a two-word punchline. A rapid one-liner. A bit that takes three lines to pay off.
+- Specific details, said casually: quote the page's real words like you can't believe they're real.
+- They commit to one silly image and ride it ("this pricing page is a hostage note… with a free trial").
+- At least one longer bit: act out a scene, like the meeting where this got approved, a visitor's inner monologue, or the button having a breakdown.
+- A running gag: set something up early, bring it back later, pay it off at the end.
+- Pauses are part of the joke. Put [beat] where a comic would stop and let it land, usually right before the punchline. One or two per line at most, never every line.
 
-Weak: "Your call to action is not very clear." Strong: "Your button says 'Learn more'. Learn more about what? It's the website equivalent of a man at a party saying 'I'm kind of a big deal' and walking away."
+Never do these (they're how AI comedy sounds):
+- "That's not X, that's Y", "It's not X, it's Y", or "X isn't Y, it's Z". Not once. It's the most AI-sounding joke shape there is.
+- Opening a line with a label or location ("Top left:", "The headline:", "Your pricing:"). Just talk about it.
+- "Let's be honest", "Here's the thing", "Buckle up", "Ah yes", "Oh boy", "I mean this lovingly", "game-changer", "in a world where", "Ladies and gentlemen".
+- A list of three in every line. Use the rule of three once or twice, not as a template.
+- Ending lines with a rhetorical question over and over.
+- Saying the roaster's catchphrase in every line. Twice in the set is plenty.
+- Explaining the joke after it lands, or summarizing the set at the end.
+- Puns as a crutch, and words like "literally", "truly", "absolutely".
+
+Weak: "Your call to action is not very clear." Weak, AI-shaped: "That's not a button. That's a cry for help." Human: "Your button says 'Learn more.' [beat] I did. I learned I don't want it."
 
 Rules that don't bend:
-- Punch at copy, design, positioning, pricing, and choices. Never at people: no jokes about anyone's face, body, age, gender, race, religion, disability, name, or accent. If photos of people appear, only framing, light, and layout are fair game.
+- Punch at copy, design, positioning, pricing, and choices. Never at people: nothing about anyone's face, body, age, gender, race, religion, disability, name, or accent. If photos of people appear, only framing, light, and layout are fair game.
 - Don't assume who built it: no "sir", "ma'am", "guys", or he/she for the builder. Talk to them as "you".
 - Clean: no swearing or profanity, not even bleeped. Attitude comes from the writing, not the language.
-- Funny first, cruel never. Sharp, specific, and affectionate: the builder should laugh hardest and share it.
-- Write for the ear: a voice actor performs it. Short sentences, natural rhythm, contractions. No lists, emoji, markdown, stage directions, or bracketed sound effects.
+- Funny first, cruel never. The builder should laugh hardest and want to share it.
+- It's performed by a voice actor: contractions, spoken rhythm, no lists, emoji, markdown, stage directions, or bracketed sound effects. The only bracket allowed is [beat].
 - Spell out symbols as they're said ("forty-nine dollars", "ten x"). No URLs.
-- The fix is the one moment you drop the act: real advice the builder could act on today, about the single biggest problem.`;
+- The fix is the one moment you drop the act: real, plain advice the builder could act on today, about the single biggest problem.`;
 
 function languageRule(language: LanguageId) {
   return language === "fr"
@@ -62,9 +72,13 @@ function languageRule(language: LanguageId) {
     : "Write everything in English.";
 }
 
+const pointable = (elements: LandingInput["elements"]) => elements.filter((e) => e.kind !== "nav" && e.kind !== "footer");
+
 function describeLanding(input: LandingInput) {
-  const elements = input.elements
-    .map((e) => `- ${e.key} (${e.kind}, at y=${e.box.y}px): ${JSON.stringify(e.text.slice(0, 160))}`)
+  // Whole headers and footers are containers, not things a joke is about;
+  // leaving them out makes the script point at the links inside instead.
+  const elements = pointable(input.elements)
+    .map((e) => `- ${e.key} (${e.kind}, x=${e.box.x} y=${e.box.y} w=${e.box.w} h=${e.box.h}): ${JSON.stringify(e.text.slice(0, 160))}`)
     .join("\n");
   const facts = Object.entries(input.facts)
     .map(([k, v]) => `${k}: ${v}`)
@@ -74,7 +88,7 @@ Title: ${input.title}
 Meta description: ${input.description || "(none)"}
 Facts: ${facts}
 
-Elements you can target (use the key):
+Elements you can point at (use the keys). Boxes are in page pixels on a 1280px-wide page: x=0 is the left edge, small y is the top.
 ${elements}
 
 Visible text, top of page first:
@@ -146,7 +160,7 @@ Roast this landing page as ${roaster.name}.`,
   if (!out) throw new Error(`The script came back unreadable (stop: ${response.stop_reason}).`);
   if (out.refuse) return { refused: true, reason: out.refuse_reason || "We don't roast that." };
 
-  const keys = new Set(input.elements.map((e) => e.key));
+  const keys = new Set(pointable(input.elements).map((e) => e.key));
   return {
     refused: false,
     script: {
@@ -154,7 +168,7 @@ Roast this landing page as ${roaster.name}.`,
       lines: out.lines
         .filter((l) => l.text.trim())
         .slice(0, 9)
-        .map((l) => ({ text: l.text.trim(), target: l.target && keys.has(l.target) ? l.target : null })),
+        .map((l) => ({ text: l.text.trim(), targets: l.targets.filter((k) => keys.has(k)).slice(0, 3) })),
       score: Math.round(Math.min(10, Math.max(1, out.score)) * 10) / 10,
       top_burn: out.top_burn.trim().slice(0, 140),
       fix: out.fix.trim(),

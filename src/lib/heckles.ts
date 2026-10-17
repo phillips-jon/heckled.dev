@@ -32,7 +32,9 @@ export type LandingInput = {
   elements: PageElement[];
 };
 
-export type ScriptLine = { text: string; target: string | null };
+// A line points at the elements it's about (up to three, boxed together), or
+// at nothing when no element on the list is exactly what it means.
+export type ScriptLine = { text: string; targets: string[] };
 
 export type Script = {
   intro: string;
@@ -58,7 +60,9 @@ export type Word = { w: string; s: number; e: number };
 export type Beat = {
   kind: "intro" | "line" | "score" | "fix";
   text: string;
-  target: string | null;
+  targets: string[];
+  // Roasts made before lines could point at several elements.
+  target?: string | null;
   start: number;
   end: number;
   words: Word[];

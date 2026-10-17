@@ -5,6 +5,9 @@ import { getRoaster, isLanguage } from "@/lib/roasters";
 import { checkHost, normalizeUrl } from "@/lib/ssrf";
 import { wakeWorker } from "@/lib/worker";
 
+// Part of the cache key: bump it when the roasts change enough that a cached
+// one from before would be a worse show.
+const PIPELINE = "v3";
 const PER_HOUR = Number(process.env.RATE_LIMIT_PER_HOUR || 3);
 // The kill switch on spend: no new heckles past this many in a day.
 const PER_DAY = Number(process.env.DAILY_HECKLE_CAP || 400);
@@ -18,7 +21,7 @@ export async function POST(request: NextRequest) {
   if (!roaster || !isLanguage(language)) return NextResponse.json({ error: "generic" }, { status: 400 });
 
   // Same page, same roaster, same language within a day: hand back that roast.
-  const inputHash = crypto.createHash("sha256").update(url.toString()).digest("hex");
+  const inputHash = crypto.createHash("sha256").update(`${PIPELINE}|${url}`).digest("hex");
   const cached = findCached(inputHash, roaster.id, language);
   if (cached) return NextResponse.json({ slug: cached.slug, path: `/h/${cached.slug}`, cached: true });
 

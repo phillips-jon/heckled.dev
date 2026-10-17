@@ -118,17 +118,23 @@ async function duration(file: string) {
   return parseFloat(stdout);
 }
 
+// The script marks comic pauses with [beat]: the voice waits there, and the
+// captions just leave it out.
+const PAUSE = /\s*\[beat\]\s*/gi;
+const spoken = (text: string) => text.replace(PAUSE, ' <break time="0.6s" /> ').trim();
+const shown = (text: string) => text.replace(PAUSE, " ").replace(/\s+/g, " ").trim();
+
 function beatsOf(script: Script, language: LanguageId) {
   const score = language === "fr" ? String(script.score).replace(".", ",") : String(script.score);
   const beats: Omit<Beat, "start" | "end" | "words">[] = [
-    { kind: "intro", text: script.intro, target: null },
-    ...script.lines.map((l) => ({ kind: "line" as const, text: l.text, target: l.target })),
+    { kind: "intro", text: script.intro, targets: [] },
+    ...script.lines.map((l) => ({ kind: "line" as const, text: l.text, targets: l.targets })),
     {
       kind: "score",
       text: language === "fr" ? `Je lui donne ${score} sur dix.` : `I'm giving it a ${score} out of ten.`,
-      target: null,
+      targets: [],
     },
-    { kind: "fix", text: (language === "fr" ? "Le vrai conseil : " : "One real fix. ") + script.fix, target: null },
+    { kind: "fix", text: (language === "fr" ? "Le vrai conseil : " : "One real fix. ") + script.fix, targets: [] },
   ];
   return beats;
 }
@@ -147,7 +153,7 @@ export async function perform(script: Script, roaster: RoasterId, language: Lang
       Array.from({ length: Math.min(SLOTS, beats.length) }, async () => {
         while (next < beats.length) {
           const i = next++;
-          const { audio, segments } = await speak(beats[i].text, voiceId, pronunciationId, pace);
+          const { audio, segments } = await speak(spoken(beats[i].text), voiceId, pronunciationId, pace);
           const file = path.join(dir, `${i}.ogg`);
           await fs.writeFile(file, audio);
           results[i] = { file, segments };
@@ -159,7 +165,8 @@ export async function perform(script: Script, roaster: RoasterId, language: Lang
     let t = 0;
     for (let i = 0; i < beats.length; i++) {
       const d = await duration(results[i].file);
-      timeline.push({ ...beats[i], start: round(t), end: round(t + d), words: placeWords(beats[i].text, results[i].segments, t) });
+      const text = shown(beats[i].text);
+      timeline.push({ ...beats[i], text, start: round(t), end: round(t + d), words: placeWords(text, results[i].segments, t) });
       t += d + GAP_S;
     }
 

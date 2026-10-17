@@ -196,12 +196,34 @@ const EXTRACT_JS = String.raw`function extract(maxHeight) {
   });
 
   document.querySelectorAll("h2").forEach((el) => add("section", el, clean(el.innerText), 10));
+  document.querySelectorAll("h3").forEach((el) => add("heading", el, clean(el.innerText), 12));
+  // Plain links (nav items, footer links, "learn more"), so a joke about
+  // "About" and "Store" can point at exactly those two.
+  document.querySelectorAll("a").forEach((el) => {
+    const text = clean(el.innerText);
+    if (text && text.length <= 40) add("link", el, text, 40);
+  });
+  document.querySelectorAll("p, li, label, small").forEach((el) => {
+    const text = clean(el.innerText);
+    if (text.length >= 3 && text.length <= 300 && !el.querySelector("p, li")) add("text", el, text, 30);
+  });
+  // Short text sitting straight in a div or span ("Canada", "New", a badge).
+  document.querySelectorAll("div, span").forEach((el) => {
+    if (el.children.length) return;
+    const text = clean(el.textContent);
+    if (text.length >= 2 && text.length <= 80) add("text", el, text, 45);
+  });
 
   const imgs = Array.from(document.querySelectorAll("img, video, svg, picture, canvas"))
     .map((el) => ({ el, r: el.getBoundingClientRect() }))
-    .filter(({ r }) => r.width * r.height > 60_000)
+    .filter(({ r }) => r.width * r.height > 6_000)
     .sort((a, b) => b.r.width * b.r.height - a.r.width * a.r.height);
-  imgs.forEach(({ el }) => add("image", el, clean(el.getAttribute("alt") || el.tagName.toLowerCase()), 4));
+  imgs.forEach(({ el }) => add("image", el, clean(el.getAttribute("alt") || el.getAttribute("aria-label") || el.tagName.toLowerCase()), 8));
+
+  // Search boxes, signup fields: things people type into.
+  document.querySelectorAll("input:not([type=hidden]):not([type=submit]), textarea, select").forEach((el) => {
+    add("field", el, clean(el.getAttribute("placeholder") || el.getAttribute("aria-label") || el.getAttribute("name") || "field"), 6);
+  });
 
   // Pricing and social proof, found by what they say.
   document.querySelectorAll("section, [id], [class*=pricing], [class*=testimonial], [class*=logos]").forEach((el) => {

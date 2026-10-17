@@ -82,7 +82,16 @@ export function Player({ audioSrc, imageSrc, imageWidth, imageHeight, boxes, tim
   const beats = timeline.beats;
   const index = beats.findLastIndex((b) => time >= b.start - 0.05);
   const beat = index >= 0 ? beats[index] : null;
-  const target = beat?.target ? boxes[beat.target] : null;
+  // One box around everything the line is about.
+  const keys = (beat?.targets ?? (beat?.target ? [beat.target] : [])).filter((k) => boxes[k]);
+  const target: Box | null = keys.length
+    ? (() => {
+        const bs = keys.map((k) => boxes[k]);
+        const x = Math.min(...bs.map((b) => b.x));
+        const y = Math.min(...bs.map((b) => b.y));
+        return { x, y, w: Math.max(...bs.map((b) => b.x + b.w)) - x, h: Math.max(...bs.map((b) => b.y + b.h)) - y };
+      })()
+    : null;
 
   // The camera: centre the target a little above the middle (the captions
   // sit at the bottom), never past the edges of the screenshot.
@@ -123,7 +132,7 @@ export function Player({ audioSrc, imageSrc, imageWidth, imageHeight, boxes, tim
             />
             {target && (
               <div
-                key={`${index}-${beat?.target}`}
+                key={`${index}-${keys.join(",")}`}
                 className="target-box pointer-events-none absolute rounded-lg border-2 border-accent transition-all duration-500"
                 style={{
                   left: target.x * scale - pad,
