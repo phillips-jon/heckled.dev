@@ -78,9 +78,11 @@ export function HeckleStudio({ roasters }: { roasters: Roaster[] }) {
   }
 
   const chosen = roasters.find((r) => r.id === roaster)!;
+  const host = url.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "") || "your page";
 
   return (
     <form id="heckle" onSubmit={submit}>
+      {busy && <Curtain roaster={chosen} host={host} />}
       <fieldset>
         <legend className="label mb-4 flex items-center gap-2">
           <span className="grid size-5 place-items-center rounded-full border border-line-strong text-[10px] text-ink">1</span>
@@ -226,5 +228,33 @@ export function HeckleStudio({ roasters }: { roasters: Roaster[] }) {
         </fieldset>
       </div>
     </form>
+  );
+}
+
+// The moment after "Heckle it": a curtain drops over the page with the
+// heckler under the spotlight, so there's no doubt the show is starting. It
+// stays up until the roast page replaces it.
+function Curtain({ roaster, host }: { roaster: Roaster; host: string }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-paper/85 p-6 backdrop-blur-md" role="status" aria-live="assertive">
+      <div className="rise w-full max-w-md overflow-hidden rounded-2xl border border-line-strong bg-raised text-center shadow-2xl shadow-black/50">
+        <div className="portrait-tile relative grid aspect-[4/3] place-items-center overflow-hidden">
+          <span
+            className="absolute inset-0"
+            style={{ background: "radial-gradient(40% 60% at 50% 25%, color-mix(in srgb, var(--accent) 32%, transparent), transparent 72%)" }}
+          />
+          <Portrait id={roaster.id} className="talking relative w-[58%] translate-y-[10%]" />
+        </div>
+        <div className="border-t border-line px-6 py-6">
+          <p className="text-xl leading-snug font-semibold text-balance">
+            Sending <span className="text-accent [overflow-wrap:anywhere]">{host}</span> to {roaster.name.replace(/^The /, "the ")}
+          </p>
+          <p className="mt-2 text-[15px] text-muted">Booking the stage. The show starts in a second.</p>
+          <div className="mt-5 h-1 overflow-hidden rounded-full bg-line">
+            <div className="shimmer h-full w-1/3 rounded-full bg-accent" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
