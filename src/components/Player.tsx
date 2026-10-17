@@ -82,27 +82,28 @@ export function Player({ audioSrc, imageSrc, imageWidth, imageHeight, boxes, tim
   const beats = timeline.beats;
   const index = beats.findLastIndex((b) => time >= b.start - 0.05);
   const beat = index >= 0 ? beats[index] : null;
-  // One box around everything the line is about.
+  // Each thing the line mentions gets its own box. The camera frames all of
+  // them when they fit on screen together, and otherwise follows the first.
   const keys = (beat?.targets ?? (beat?.target ? [beat.target] : [])).filter((k) => boxes[k]);
-  const target: Box | null = keys.length
-    ? (() => {
-        const bs = keys.map((k) => boxes[k]);
-        const x = Math.min(...bs.map((b) => b.x));
-        const y = Math.min(...bs.map((b) => b.y));
-        return { x, y, w: Math.max(...bs.map((b) => b.x + b.w)) - x, h: Math.max(...bs.map((b) => b.y + b.h)) - y };
-      })()
-    : null;
+  const marks: Box[] = keys.map((k) => boxes[k]);
+  const union = (bs: Box[]): Box => {
+    const x = Math.min(...bs.map((b) => b.x));
+    const y = Math.min(...bs.map((b) => b.y));
+    return { x, y, w: Math.max(...bs.map((b) => b.x + b.w)) - x, h: Math.max(...bs.map((b) => b.y + b.h)) - y };
+  };
 
-  // The camera: centre the target a little above the middle (the captions
-  // sit at the bottom), never past the edges of the screenshot.
+  // The camera: centre the focus a little above the middle (the captions sit
+  // at the bottom), never past the edges of the screenshot.
   const narrow = width > 0 && width < NARROW;
   const scale = width / imageWidth;
   const viewH = width * (narrow ? 5 / 4 : 10 / 16);
-  const zoom = target && narrow ? Math.min(2, Math.max(1, (width * 0.9) / (target.w * scale))) : 1;
+  const all = marks.length ? union(marks) : null;
+  const focus = all && all.w * scale <= width * 0.92 && all.h * scale <= viewH * 0.6 ? all : (marks[0] ?? null);
+  const zoom = focus && narrow ? Math.min(2, Math.max(1, (width * 0.9) / (focus.w * scale))) : 1;
   const s = scale * zoom;
   const clamp = (v: number, max: number) => Math.min(Math.max(0, max), Math.max(0, v));
-  const panX = target ? clamp((target.x + target.w / 2) * s - width / 2, imageWidth * s - width) : 0;
-  const panY = target ? clamp((target.y + target.h / 2) * s - viewH * 0.38, imageHeight * s - viewH) : 0;
+  const panX = focus ? clamp((focus.x + focus.w / 2) * s - width / 2, imageWidth * s - width) : 0;
+  const panY = focus ? clamp((focus.y + focus.h / 2) * s - viewH * 0.38, imageHeight * s - viewH) : 0;
   const pad = 6;
 
   return (
@@ -128,21 +129,22 @@ export function Player({ audioSrc, imageSrc, imageWidth, imageHeight, boxes, tim
             {/* Everything but the target dims while a line is about it. */}
             <div
               className="pointer-events-none absolute inset-0 transition-opacity duration-500"
-              style={{ background: "rgba(0,0,0,0.55)", opacity: target ? 1 : started ? 0.15 : 0 }}
+              style={{ background: "rgba(0,0,0,0.55)", opacity: marks.length ? 1 : started ? 0.15 : 0 }}
             />
-            {target && (
+            {marks.map((m, i) => (
               <div
-                key={`${index}-${keys.join(",")}`}
-                className="target-box pointer-events-none absolute rounded-lg border-2 border-accent transition-all duration-500"
+                key={`${index}-${keys[i]}`}
+                className="land pointer-events-none absolute rounded-lg border-2 border-accent"
                 style={{
-                  left: target.x * scale - pad,
-                  top: target.y * scale - pad,
-                  width: target.w * scale + pad * 2,
-                  height: target.h * scale + pad * 2,
+                  left: m.x * scale - pad,
+                  top: m.y * scale - pad,
+                  width: m.w * scale + pad * 2,
+                  height: m.h * scale + pad * 2,
                   background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+                  animationDelay: `${i * 120}ms`,
                 }}
               />
-            )}
+            ))}
           </div>
         )}
 

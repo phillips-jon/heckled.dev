@@ -16,6 +16,17 @@ const ScriptSchema = z.object({
     .boolean()
     .describe("True only if the page is adult, hateful, violent, or obviously illegal. Then leave the rest short."),
   refuse_reason: z.string().describe("Why, in one short sentence, when refuse is true. Empty otherwise."),
+  understanding: z
+    .object({
+      kind: z
+        .string()
+        .describe("What kind of site this is: a product landing page, a launch platform or directory, a marketplace, a portfolio, an online store, a newsletter, docs, a personal site…"),
+      purpose: z.string().describe("One plain sentence: what the site does and who it's for, from its own copy."),
+      content: z
+        .string()
+        .describe("Whose things are on show: the builder's own product, submissions or listings from other people, client work, or a mix."),
+    })
+    .describe("Work this out before writing any jokes. Every joke has to make sense for this kind of site."),
   intro: z.string().describe("The opener: walking on stage and reacting to the page on the screen. One or two short sentences that get a laugh on their own."),
   lines: z
     .array(
@@ -38,6 +49,8 @@ const ScriptSchema = z.object({
 export type ScriptResult = { refused: true; reason: string } | { refused: false; script: Script };
 
 const RULES = `You're doing a set at a comedy club where everyone in the room builds software. The landing page is up on the big screen behind you. This gets performed out loud, word for word, so write a transcript of a person talking, not jokes on a page.
+
+First, work out what this site actually is, who it's for, and whose content is on it, from the copy and the layout, and fill in "understanding". Then judge it as what it is: a directory as a directory, a portfolio as a portfolio, a store as a store. A joke that only works if the site were something else is wrong.
 
 The single test for every line: could a tired, funny human have said this off the top of their head at a bar? If it sounds written, polished, balanced, or quotable on a poster, it's wrong. Rewrite it until it sounds said.
 
@@ -62,6 +75,8 @@ Pauses: put [beat] where you'd actually stop talking and let the room catch up. 
 
 Rules that don't bend:
 - Punch at copy, design, positioning, pricing, and choices. Never at people: nothing about anyone's face, body, age, gender, race, religion, disability, name, or accent. If photos of people appear, only framing, light, and layout are fair game. Invented people (Sarah, the intern) are fine; real people on the page are not targets.
+- Only what's visibly on the page, described accurately. Don't say something is in the nav, the footer, or "up top" unless it is. Don't guess at motives, relationships, or business deals, and never imply anyone is gaming, rigging, faking, playing favourites, or self-dealing. A shared name or handle is a coincidence, not a scandal.
+- If the page lists other people's work (a directory, marketplace, launch site, app store, portfolio of clients), the listings are submissions from other makers, not the owner's picks or projects, unless the page plainly says so. Roast how the page presents them: layout, labels, sorting, badges, ads. Never roast the listed products or their makers by name.
 - Don't assume who built it: no "sir", "ma'am", "guys", or he/she for the builder. Talk to them as "you".
 - Clean: no swearing or profanity, not even bleeped.
 - Funny first, cruel never. The builder should laugh hardest and want to share it.
@@ -181,6 +196,7 @@ Roast this landing page as ${roaster.name}.`,
   return {
     refused: false,
     script: {
+      understanding: out.understanding,
       intro: out.intro.trim(),
       lines: out.lines
         .filter((l) => l.text.trim())
@@ -222,7 +238,7 @@ const AnalysisSchema = z.object({
 
 // The serious half of a heckle: a review a builder can act on, written as an
 // experienced conversion and design consultant would, with no jokes.
-export async function writeLandingAnalysis(input: LandingInput, screenshot: Buffer): Promise<Analysis | null> {
+export async function writeLandingAnalysis(input: LandingInput, screenshot: Buffer, understanding?: Script["understanding"]): Promise<Analysis | null> {
   const { hero, whole } = await views(screenshot);
   const response = await client.messages.parse({
     model: ANALYSIS_MODEL,
@@ -237,7 +253,14 @@ Rules:
 - Fixes must be concrete enough to implement today: suggest actual replacement copy where copy is the problem.
 - Never comment on people's appearance, even if photos of people appear.
 - Plain, warm, direct language. No jokes, no hype, no emoji, no markdown.`,
-    messages: [{ role: "user", content: [...images(hero, whole), { type: "text", text: `${describeLanding(input)}\n\nReview this landing page.` }] }],
+    messages: [{ role: "user", content: [...images(hero, whole), {
+          type: "text",
+          text: `${describeLanding(input)}${
+            understanding
+              ? `\n\nWhat this site is: ${understanding.kind}. ${understanding.purpose} Content on show: ${understanding.content}. Judge it as that kind of site.`
+              : ""
+          }\n\nReview this page.`,
+        }] }],
   });
   logUsage("analysis", ANALYSIS_MODEL, response.usage);
   const out = response.parsed_output;

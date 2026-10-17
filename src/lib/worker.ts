@@ -52,7 +52,7 @@ async function runHeckle(h: Heckle) {
   // The written review runs alongside the voice. The roast is done when the
   // audio is; the analysis lands a few seconds later and a missing one never
   // fails the heckle.
-  const analysis = writeLandingAnalysis(input, screenshot)
+  const analysis = writeLandingAnalysis(input, screenshot, result.script.understanding)
     .then((a) => a && updateHeckle(h.id, { analysis: JSON.stringify(a) }))
     .catch((err) => console.error(`[heckled] ${h.slug} analysis failed:`, err));
   const timeline = await perform(result.script, h.roaster, h.language, mediaPath(h.id, "roast.mp3"));

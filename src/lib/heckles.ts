@@ -36,7 +36,11 @@ export type LandingInput = {
 // at nothing when no element on the list is exactly what it means.
 export type ScriptLine = { text: string; targets: string[] };
 
+// What the writer decided the site is, before writing a joke about it.
+export type Understanding = { kind: string; purpose: string; content: string };
+
 export type Script = {
+  understanding?: Understanding;
   intro: string;
   lines: ScriptLine[];
   score: number;
