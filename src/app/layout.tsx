@@ -33,7 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body>
         {/* The sheet: one column with hairline edges, like the other sites. */}
-        <div className="mx-auto flex min-h-dvh max-w-[1180px] flex-col border-x border-line bg-sheet">
+        <div className="mx-auto flex min-h-dvh max-w-[1270px] flex-col border-x border-line bg-sheet">
           <Nav />
           <main className="flex-1">{children}</main>
           <Footer />

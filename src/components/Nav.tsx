@@ -18,8 +18,8 @@ export function Nav() {
         </a>
       </nav>
       <Link href="/" className="group flex items-center gap-2 text-ink no-underline" aria-label="Heckled, home">
-        <Mark className="splat size-8" />
-        <span className="text-[19px] font-bold tracking-[-0.03em] italic">
+        <Mark className="splat size-[34px]" />
+        <span className="text-[20px] font-bold tracking-[-0.03em] italic">
           Heckled<span className="text-accent">!</span>
         </span>
       </Link>
