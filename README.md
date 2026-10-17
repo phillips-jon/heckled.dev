@@ -4,7 +4,7 @@ heckled.dev heckles anything you made. Paste a landing page URL and a voiced
 roaster performs a 45 to 60 second roast, with subtitles synced word by word
 and a spotlight on whatever is being roasted, then gives you one real fix.
 
-Built for the [Active Builders × Gradium AI builder challenge](https://activebuilders.dev).
+Built for the [Active Builders × Gradium AI builder challenge](https://activebuilders.dev/hackathon/gradium/).
 
 ## How it works
 
