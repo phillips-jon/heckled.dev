@@ -4,19 +4,19 @@
     "fr": "AhIOmOTI3VuZAOpY"
   },
   "voices": {
-    "vc": {
-      "en": "GETwtFlreXdAiyKE",
-      "fr": "f6M2srdNuXUJjCdt"
-    },
-    "critic": {
-      "en": "0JI9C2jCp4GHYFyE",
-      "fr": "ceOlj8RKU2DAfEsd"
-    },
     "bro": {
       "en": "gkubL7beBvlV4o0m"
     },
+    "director": {
+      "en": "QHG1Z6KH3RGP4Ddo",
+      "fr": "q5IpL0H1RYrl8WFL"
+    },
+    "vc": {
+      "en": "85Ig545Zqs20gGDo",
+      "fr": "4TNGhzRM4Ctu9J6Q"
+    },
     "doc": {
-      "en": "XD9ASYxDoZiNMzmr"
+      "en": "6MYwDQ9vaatlGSWu"
     }
   }
 }

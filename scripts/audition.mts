@@ -13,7 +13,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { getRoaster, type RoasterId } from "../src/lib/roasters";
+import { getRoaster, voiceFor, type RoasterId } from "../src/lib/roasters";
 import { normalize } from "../src/lib/voice";
 
 const BASE = "https://api.gradium.ai/api";
@@ -81,9 +81,14 @@ function writePage(list: Candidates) {
   const rows = Object.entries(list)
     .map(([id, cands]) => {
       const r = getRoaster(id)!;
-      const clips = cands
-        .map((_, i) => `<div class="c"><b>${i + 1}</b><audio controls preload="none" src="${id}-${i + 1}.mp3"></audio></div>`)
-        .join("");
+      const current = fs.existsSync(path.join(DIR, `${id}-current.mp3`))
+        ? `<div class="c"><b>Now</b><audio controls preload="none" src="/auditions/${id}-current.mp3"></audio><span>the voice on the site today</span></div>`
+        : "";
+      const clips =
+        current +
+        cands
+          .map((_, i) => `<div class="c"><b>${i + 1}</b><audio controls preload="none" src="/auditions/${id}-${i + 1}.mp3"></audio></div>`)
+          .join("");
       return `<section><h2>${r.name}</h2><p>${r.voicePrompt}</p><p class="line">“${AUDITION[r.id]}”</p>${clips}</section>`;
     })
     .join("");
@@ -92,7 +97,7 @@ function writePage(list: Candidates) {
     `<!doctype html><meta charset="utf-8"><title>Voice auditions</title>
 <style>body{font:16px/1.5 system-ui;background:#0f0f11;color:#eee;max-width:760px;margin:40px auto;padding:0 20px}
 section{border-top:1px solid #333;padding:20px 0}p{color:#aaa}.line{color:#fff;font-style:italic}
-.c{display:flex;gap:12px;align-items:center;margin:8px 0}b{width:20px}</style>
+.c{display:flex;gap:12px;align-items:center;margin:8px 0}b{width:36px}span{color:#888;font-size:14px}</style>
 <h1>Voice auditions</h1><p>Pick one per roaster, then: <code>scripts/audition.mts pick &lt;roaster&gt; &lt;number&gt;</code></p>${rows}`,
   );
 }
@@ -115,12 +120,23 @@ if (cmd === "generate") {
       await waitReady(cand);
       await speak(cand, AUDITION[r.id], r.pace, path.join(DIR, `${id}-${i + 1}.mp3`));
     }
+    // The voice the site uses now, saying the same line, to compare against.
+    const { voiceId } = voiceFor(r.id, "en");
+    await speak(voiceId, AUDITION[r.id], r.pace, path.join(DIR, `${id}-current.mp3`));
     list[id] = ids;
     console.log(`${id}: ${ids.length} candidates`);
   }
   fs.writeFileSync(listFile, JSON.stringify(list, null, 2));
   writePage(list);
   console.log("Listen at http://localhost:3015/auditions/");
+} else if (cmd === "current") {
+  // Record the live voice for roasters that already have candidates.
+  const list = readList();
+  for (const id of args) {
+    const r = getRoaster(id)!;
+    await speak(voiceFor(r.id, "en").voiceId, AUDITION[r.id], r.pace, path.join(DIR, `${id}-current.mp3`));
+  }
+  writePage(list);
 } else if (cmd === "pick") {
   const [id, n] = args;
   const r = getRoaster(id);

@@ -84,7 +84,7 @@ export function HeckleStudio({ roasters }: { roasters: Roaster[] }) {
       <fieldset>
         <legend className="label mb-4 flex items-center gap-2">
           <span className="grid size-5 place-items-center rounded-full border border-line-strong text-[10px] text-ink">1</span>
-          Pick your roaster
+          Pick your heckler
         </legend>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {roasters.map((r) => {
@@ -158,7 +158,7 @@ export function HeckleStudio({ roasters }: { roasters: Roaster[] }) {
       <div className="mt-12">
         <p className="label mb-4 flex items-center gap-2">
           <span className="grid size-5 place-items-center rounded-full border border-line-strong text-[10px] text-ink">2</span>
-          Paste your page
+          Hand over the URL
         </p>
         <label htmlFor="url" className="sr-only">
           Your landing page

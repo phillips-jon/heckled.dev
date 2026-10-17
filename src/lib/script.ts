@@ -23,7 +23,7 @@ const ScriptSchema = z.object({
           .describe("The key of the element this beat is about, from the element list, or null."),
       }),
     )
-    .describe("Exactly five jokes, roughly in the order the page reads, building to the strongest."),
+    .describe("Exactly eight jokes, roughly in the order the page reads, building to the strongest."),
   score: z.number().describe("Out of 10, one decimal. Most pages land between 4 and 7."),
   top_burn: z.string().describe("The funniest line of the set, tightened to stand alone on a share card, under 120 characters."),
   fix: z.string().describe("One sentence of genuinely useful advice, read aloud at the end, under 25 words. Not a joke."),
@@ -50,6 +50,7 @@ Weak: "Your call to action is not very clear." Strong: "Your button says 'Learn 
 Rules that don't bend:
 - Punch at copy, design, positioning, pricing, and choices. Never at people: no jokes about anyone's face, body, age, gender, race, religion, disability, name, or accent. If photos of people appear, only framing, light, and layout are fair game.
 - Don't assume who built it: no "sir", "ma'am", "guys", or he/she for the builder. Talk to them as "you".
+- Clean: no swearing or profanity, not even bleeped. Attitude comes from the writing, not the language.
 - Funny first, cruel never. Sharp, specific, and affectionate: the builder should laugh hardest and share it.
 - Write for the ear: a voice actor performs it. Short sentences, natural rhythm, contractions. No lists, emoji, markdown, stage directions, or bracketed sound effects.
 - Spell out symbols as they're said ("forty-nine dollars", "ten x"). No URLs.
@@ -121,7 +122,7 @@ export async function writeLandingScript(
 You are performing on Heckled, where builders paste their landing page and get a short voiced roast that ends with one real fix.
 
 ${RULES}
-- Length matters, because this is performed in under a minute: the intro is at most 12 words, there are exactly five lines, and each line is at most ${Math.round(roaster.words / 6)} words. Count them. One sharp joke per line beats three.
+- Length matters, because this is a ninety-second set: the intro is at most 15 words, there are exactly eight lines, and each line is at most ${Math.round(roaster.words / 4)} words. Count them. One sharp joke per line beats three. Eight lines means room for a running bit: set something up early and pay it off later.
 
 ${languageRule(language)}`,
     messages: [
@@ -152,7 +153,7 @@ Roast this landing page as ${roaster.name}.`,
       intro: out.intro.trim(),
       lines: out.lines
         .filter((l) => l.text.trim())
-        .slice(0, 6)
+        .slice(0, 9)
         .map((l) => ({ text: l.text.trim(), target: l.target && keys.has(l.target) ? l.target : null })),
       score: Math.round(Math.min(10, Math.max(1, out.score)) * 10) / 10,
       top_burn: out.top_burn.trim().slice(0, 140),

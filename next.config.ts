@@ -41,6 +41,10 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // The local voice audition page (scripts/audition.mts); absent in production.
+  async rewrites() {
+    return [{ source: "/auditions", destination: "/auditions/index.html" }];
+  },
   async headers() {
     return [
       {

@@ -21,18 +21,17 @@ export default function Home() {
     <>
       <section className="grid items-center gap-10 px-5 pt-14 pb-10 sm:px-14 sm:pt-20 lg:grid-cols-[1fr_420px] lg:gap-12">
         <div>
-          <h1 className="rise max-w-[13em] text-[clamp(2.2rem,5.2vw,3.4rem)] leading-[1.06] font-normal tracking-[-0.025em] text-balance">
-            <b className="font-semibold">Your landing page walks on stage.</b>{" "}
+          <h1 className="rise max-w-[12em] text-[clamp(2.6rem,6.4vw,4.4rem)] leading-[1] font-bold tracking-[-0.035em] text-balance">
+            Your landing page walks on <span className="text-accent">stage.</span>{" "}
             <span className="text-muted">Four hecklers are waiting, and they&apos;ve read every word.</span>
           </h1>
           <p className="rise mt-7 max-w-[34em] text-[17px] leading-relaxed text-body [animation-delay:80ms]">
-            Pick one and paste a URL. In under a minute you&apos;ll hear a minute of material about what&apos;s
-            actually on your page, voiced by{" "}
+            Pick a heckler, hand over your URL, and try not to take it personally. You get about ninety seconds of material on
+            what&apos;s actually on your page, voiced by{" "}
             <a href="https://gradium.ai" className="text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
               Gradium
             </a>
-            . Then you get the real review: what to fix, in order, and a prompt to
-            hand straight to your AI.
+            . Then the real review: what to fix, in what order, and a prompt you can hand straight to your AI.
           </p>
         </div>
         <div className="rise hidden sm:block [animation-delay:160ms]">
@@ -44,12 +43,21 @@ export default function Home() {
         <HeckleStudio roasters={ROASTERS.map((r) => ({ id: r.id, name: r.name, tagline: r.tagline, bio: r.bio, pronoun: r.pronoun }))} />
       </section>
 
-      <Section id="how" label="How it works" title="From a URL to a roast in under a minute.">
+      <Section id="how" label="How it works" title="From URL to public humiliation in about a minute.">
         <ol className="border-t border-line">
           {[
-            ["Read", "A real browser loads your page, takes a screenshot, and notes the headline, every button, the pricing, and the social proof, with where each one sits."],
-            ["Write", "Claude looks at the screenshot and writes five beats, each about one thing on the page, plus a score, the line people will quote, and one fix that actually helps."],
-            ["Perform", "Gradium voices it in the roaster's designed voice, with word timestamps that drive the captions and move the spotlight to whatever is being roasted."],
+            [
+              "We read it. All of it.",
+              "A real browser loads your page and takes notes on everything: the headline you rewrote nine times, the button that just says “Learn more”, the pricing you hid three scrolls down.",
+            ],
+            [
+              "We write the set.",
+              "Claude studies your screenshot like it owes it money, then writes eight jokes about what’s really there, a score you’ll pretend not to care about, the line your friends will quote back at you, and one fix that genuinely helps.",
+            ],
+            [
+              "We say it out loud.",
+              "Gradium gives your heckler a voice, the captions keep up word for word, and a spotlight follows every joke to the exact thing it’s about. There’s nowhere to hide. That’s the point.",
+            ],
           ].map(([title, body], i) => (
             <li key={title} className="flex gap-6 border-b border-line py-5">
               <span className="w-8 shrink-0 pt-0.5 font-mono text-sm text-faint">0{i + 1}</span>
@@ -64,8 +72,9 @@ export default function Home() {
 
       <Section label="House rules" title="We roast pages, not people.">
         <p className="max-w-xl leading-relaxed text-body text-pretty">
-          No jokes about faces, bodies, names, or anything a person can&apos;t change. Pages that are adult, hateful, or
-          illegal get a polite no. Only public pages are fetched, and every roast has a remove link for whoever made it.
+          Your headline is fair game. Your face isn&apos;t. No jokes about looks, bodies, names, or anything you can&apos;t
+          fix with a deploy, and no swearing: the material doesn&apos;t need it. Adult, hateful, or shady pages get a polite
+          no. We only look at public pages, and if you&apos;d rather it never happened, every roast has a remove link.
         </p>
       </Section>
     </>

@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const STEPS = [
-  ["queued", "Waiting for the stage"],
-  ["ingesting", "Squinting at your hero section"],
-  ["writing", "Writing material. Some of it is mean"],
-  ["voicing", "Warming up the voice"],
+  ["queued", "Your heckler is warming up"],
+  ["ingesting", "Reading every word. Yes, even the footer"],
+  ["writing", "Writing material. Some of it lands"],
+  ["voicing", "Clearing throat. Adjusting mic"],
 ] as const;
 
 // Listens for status changes over SSE (polling if that drops) and refreshes
@@ -71,7 +71,7 @@ export function Waiting({ slug, initial }: { slug: string; initial: string }) {
           </li>
         ))}
       </ol>
-      <p className="mt-8 font-mono text-xs text-faint">Usually about forty seconds. Stay for the show.</p>
+      <p className="mt-8 font-mono text-xs text-faint">About a minute. Don’t leave, they can tell.</p>
     </div>
   );
 }

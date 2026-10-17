@@ -17,7 +17,8 @@ export type Roaster = {
   pronoun: "her" | "him";
   // How the roaster talks. The comedy lives here; the delivery lives in the voice.
   persona: string;
-  // Words for intro plus lines that fill about 45 seconds at this voice's pace.
+  // Sets the length of each line (a quarter of this) so eight of them fill
+  // about ninety seconds at this voice's pace.
   words: number;
   // Gradium padding_bonus: negative speaks faster. Designed voices come out
   // slow and breathy, which suits a pause but not a punchline.
@@ -89,7 +90,7 @@ export const ROASTERS: Roaster[] = [
   },
   {
     id: "doc",
-    words: 75,
+    words: 68,
     pace: -1.2,
     name: "The Documentarian",
     tagline: "Observe, in its natural habitat…",
