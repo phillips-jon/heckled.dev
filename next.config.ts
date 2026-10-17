@@ -29,7 +29,9 @@ const nextConfig: NextConfig = {
   // Native or browser-driving packages stay outside the bundle.
   serverExternalPackages: ["better-sqlite3", "playwright-core", "sharp"],
   // The share card's font is read from disk at request time.
-  outputFileTracingIncludes: { "/*": ["./assets/**"] },
+  // The worker starts from instrumentation, which isn't a route, so tracing
+  // misses parts of playwright-core that it loads lazily; ship all of it.
+  outputFileTracingIncludes: { "/*": ["./assets/**", "./node_modules/playwright-core/**"] },
   // The data directory is set at runtime; whatever is in the local one must
   // never ship inside a build.
   outputFileTracingExcludes: { "/*": ["./data/**", "./src/**", "./scripts/**"] },

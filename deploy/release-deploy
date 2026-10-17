@@ -21,7 +21,7 @@
 # build's own database pointed at a scratch file, then `npm run bundle`. The
 # standalone server is started on a spare port against a snapshot COPY of the
 # live database (so any new migration runs on the copy first), with its worker
-# off so it never picks up a live heckle, and / must answer 200. Only then is
+# loaded but not started (it never picks up a live heckle), and / must answer 200. Only then is
 # the release marked .release-ok, the symlink moved (one rename) and heckled
 # restarted. If / doesn't answer 200 within 30 seconds after the restart, the
 # symlink goes back and the service restarts on the previous release. The
@@ -157,7 +157,7 @@ sqlite3 -readonly "$DB" ".backup '$SCRATCH/check.db'"
 PORT=$((3900 + RANDOM % 90))
 while (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; do PORT=$((PORT + 1)); done
 # Settings come from .env; the variables given here win over it.
-(cd .next/standalone && DATABASE_PATH="$SCRATCH/check.db" HECKLED_WORKER=off PORT=$PORT HOSTNAME=127.0.0.1 NODE_ENV=production \
+(cd .next/standalone && DATABASE_PATH="$SCRATCH/check.db" HECKLED_WORKER=check PORT=$PORT HOSTNAME=127.0.0.1 NODE_ENV=production \
     exec "$NODE_PREFIX/bin/node" --env-file="$SHARED/.env" server.js) >"$SCRATCH/check.log" 2>&1 9>&- &
 SERVER_PID=$!
 if ! wait_for_200 "http://127.0.0.1:$PORT$HEALTH_PATH" 40; then
