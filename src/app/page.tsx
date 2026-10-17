@@ -21,12 +21,18 @@ export default function Home() {
     <>
       <section className="grid items-center gap-10 px-5 pt-14 pb-10 sm:px-14 sm:pt-20 lg:grid-cols-[1fr_420px] lg:gap-12">
         <div>
-          <h1 className="rise max-w-[15em] text-[clamp(2rem,4.6vw,2.9rem)] leading-[1.14] font-normal tracking-[-0.018em] text-balance">
-            <b className="font-semibold">Heckled</b> roasts your landing page out loud, then tells you the one thing to fix.
+          <h1 className="rise max-w-[13em] text-[clamp(2.2rem,5.2vw,3.4rem)] leading-[1.06] font-normal tracking-[-0.025em] text-balance">
+            <b className="font-semibold">Your landing page walks on stage.</b>{" "}
+            <span className="text-muted">Four hecklers are waiting, and they&apos;ve read every word.</span>
           </h1>
-          <p className="rise mt-6 max-w-[34em] text-[17px] leading-relaxed text-body [animation-delay:80ms]">
-            Pick a roaster and paste a URL. In about twenty seconds you get a minute of material about what&apos;s actually on
-            your page, performed in a voice designed in Gradium, and a link to share the damage.
+          <p className="rise mt-7 max-w-[34em] text-[17px] leading-relaxed text-body [animation-delay:80ms]">
+            Pick one and paste a URL. In under a minute you&apos;ll hear a minute of material about what&apos;s
+            actually on your page, voiced by{" "}
+            <a href="https://gradium.ai" className="text-ink underline decoration-line-strong underline-offset-4 hover:decoration-ink">
+              Gradium
+            </a>
+            . Then you get the real review: what to fix, in order, and a prompt to
+            hand straight to your AI.
           </p>
         </div>
         <div className="rise hidden sm:block [animation-delay:160ms]">
@@ -38,7 +44,7 @@ export default function Home() {
         <HeckleStudio roasters={ROASTERS.map((r) => ({ id: r.id, name: r.name, tagline: r.tagline, bio: r.bio, pronoun: r.pronoun }))} />
       </section>
 
-      <Section id="how" label="How it works" title="From a URL to a roast in about twenty seconds.">
+      <Section id="how" label="How it works" title="From a URL to a roast in under a minute.">
         <ol className="border-t border-line">
           {[
             ["Read", "A real browser loads your page, takes a screenshot, and notes the headline, every button, the pricing, and the social proof, with where each one sits."],

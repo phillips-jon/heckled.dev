@@ -9,7 +9,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/api/heckles
   const { slug } = await ctx.params;
   const h = getHeckleBySlug(slug);
   if (!h) return NextResponse.json({ error: "not found" }, { status: 404 });
-  return NextResponse.json({ status: h.status, error: h.error });
+  return NextResponse.json({ status: h.status, error: h.error, hasAnalysis: !!h.analysis });
 }
 
 // The submitter's browser keeps the delete token; there are no accounts.

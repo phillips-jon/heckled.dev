@@ -11,7 +11,7 @@ import {
 } from "./heckles";
 import { IngestError, ingestLanding } from "./landing";
 import { getRoaster } from "./roasters";
-import { writeLandingScript } from "./script";
+import { writeLandingAnalysis, writeLandingScript } from "./script";
 import { perform } from "./voice";
 
 // The queue is the heckles table: the worker claims the oldest queued row and
@@ -49,8 +49,15 @@ async function runHeckle(h: Heckle) {
   }
   updateHeckle(h.id, { status: "voicing", script: JSON.stringify(result.script), score: result.script.score });
 
+  // The written review runs alongside the voice. The roast is done when the
+  // audio is; the analysis lands a few seconds later and a missing one never
+  // fails the heckle.
+  const analysis = writeLandingAnalysis(input, screenshot)
+    .then((a) => a && updateHeckle(h.id, { analysis: JSON.stringify(a) }))
+    .catch((err) => console.error(`[heckled] ${h.slug} analysis failed:`, err));
   const timeline = await perform(result.script, h.roaster, h.language, mediaPath(h.id, "roast.mp3"));
   updateHeckle(h.id, { status: "done", audio_path: `${h.id}/roast.mp3`, timestamps: JSON.stringify(timeline) });
+  await analysis;
 }
 
 async function loop(state: { running: number; wake: () => void }) {

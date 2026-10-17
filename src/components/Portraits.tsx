@@ -61,54 +61,47 @@ function Vc() {
   );
 }
 
-function Critic() {
-  const hair = "#1c1c21";
+function Director() {
+  const skin = "#7a4a2c";
+  const shade = "#5f3820";
+  const hair = "#1b1512";
+  const gold = "#e6b54a";
   return (
     <>
-      <defs>
-        <clipPath id="critic-shirt">
-          <path d="M26 202c4-34 30-52 74-52s70 18 74 52z" />
-        </clipPath>
-      </defs>
-      {/* a blunt Parisian bob, behind */}
-      <path d="M60 96c-2-32 16-52 40-52s42 20 40 52c0 12 2 22 6 30-10 4-22 2-28-4l-2-24H86l-2 24c-6 6-18 8-28 4 4-8 6-18 4-30z" fill={hair} {...o} />
-      {/* Breton stripes */}
-      <path d="M26 202c4-34 30-52 74-52s70 18 74 52z" fill={WHITE} />
-      <g clipPath="url(#critic-shirt)" fill="#24365a">
-        {[160, 172, 184, 196].map((y) => (
-          <rect key={y} x="20" y={y} width="160" height="6" />
-        ))}
-      </g>
-      <path d="M26 202c4-34 30-52 74-52s70 18 74 52z" fill="none" {...o} />
-      {/* neck and the red scarf, knotted loosely */}
-      <path d="M89 120h22v28H89z" fill={SKIN_SHADE} {...o} />
-      <path d="M74 146c8 8 44 8 52 0l-2-10c-12 6-36 6-48 0z" fill={ACCENT} {...o} />
-      <path d="M108 150l12 34-10 4-8-30zM96 152l-6 30 9 2 5-28z" fill={ACCENT} {...o} />
-      {/* face, chin up */}
-      <path d="M70 90c0-26 13-42 30-42s30 16 30 42-12 44-30 44-30-18-30-44z" fill={SKIN} {...o} />
-      {/* bangs cut with a ruler */}
-      <path d="M68 86c0-22 14-38 32-38s32 16 32 38c-20-3-44-3-64 0z" fill={hair} {...o} />
-      {/* beret, tilted, with its stem */}
-      <path d="M60 66c-2-16 18-28 42-28 20 0 36 9 36 20 0 6-6 9-13 10-19 3-43 4-65-2z" fill={ACCENT} {...o} />
-      <path d="M100 38l2-8" {...o} {...none} />
-      <path d="M64 62c20 4 44 4 64 0" {...thin} {...none} stroke="#c94a26" />
-      {/* eyes closed in disappointment, with a winged flick */}
-      <path d="M80 98c3 3 9 3 13 0l4-3M107 98c3 3 9 3 13 0l4-3" {...o} {...none} />
-      <path d="M79 90c4-4 11-5 15-2M106 88c4-3 11-2 15 2" {...thin} {...none} />
-      <ellipse cx="82" cy="110" rx="5" ry="3" fill={CHEEK} opacity={0.55} />
-      <ellipse cx="118" cy="110" rx="5" ry="3" fill={CHEEK} opacity={0.55} />
-      {/* a nose made for looking down, red lips, a beauty mark */}
-      <path d="M100 100c3 6 5 10 2 12h-5" {...thin} {...none} />
-      <path d="M90 120c4-3 8-3 10-1 2-2 6-2 10 1-3 5-7 7-10 7s-7-2-10-7z" fill="#c8243c" {...thin} />
-      <path d="M91 120c6 1 12 1 18 0" stroke="#8f1426" strokeWidth={1.5} fill="none" strokeLinecap="round" />
-      <circle cx="116" cy="117" r="1.6" fill={O} />
-      {/* and a glass of something she will not enjoy */}
-      <path d="M150 128h22c0 14-4 22-11 22s-11-8-11-22z" fill="#dfe6ee" {...o} />
-      <path d="M151.5 136h19c-1 8-4 12-9.5 12s-8.5-4-9.5-12z" fill="#8a1c2b" />
-      <path d="M154 131c0 4 1 7 2 9" stroke={WHITE} strokeWidth={2} strokeLinecap="round" fill="none" />
-      <path d="M161 150v24" stroke="#dfe6ee" strokeWidth={5} strokeLinecap="round" />
-      <path d="M161 150v24M151 176h20" {...o} {...none} />
-      <path d="M144 184c-4-2-4-10 2-11l10-1v12z" fill={SKIN} {...o} />
+      {/* a full, rounded afro */}
+      <path
+        d="M100 22c16 0 26 6 32 14 12 2 20 12 20 24 8 6 10 18 4 28 4 12-2 24-14 26H58c-12-2-18-14-14-26-6-10-4-22 4-28 0-12 8-22 20-24 6-8 16-14 32-14z"
+        fill={hair}
+        {...o}
+      />
+      <path d="M62 52c3-2 6-2 8 0M128 48c3-2 6-1 8 1M78 34c3-2 6-2 8 0M114 32c3-1 6 0 7 2M146 74c2 2 2 5 1 7M54 78c-2 2-2 5-1 7" {...thin} {...none} stroke="#3a2e28" />
+      {/* black turtleneck */}
+      <path d="M26 202c4-34 30-52 74-52s70 18 74 52z" fill="#2c2c32" {...o} />
+      <path d="M84 132h32v24c-10 5-22 5-32 0z" fill="#2c2c32" {...o} />
+      <path d="M85 140c10 4 20 4 30 0M85 147c10 4 20 4 30 0" stroke="#45454d" strokeWidth={2} fill="none" strokeLinecap="round" />
+      {/* face */}
+      <path d="M70 90c0-26 13-42 30-42s30 16 30 42-12 44-30 44-30-18-30-44z" fill={skin} {...o} />
+      {/* gold hoops */}
+      <circle cx="70" cy="114" r="7" fill="none" stroke={O} strokeWidth={6} />
+      <circle cx="70" cy="114" r="7" fill="none" stroke={gold} strokeWidth={3} />
+      <circle cx="130" cy="114" r="7" fill="none" stroke={O} strokeWidth={6} />
+      <circle cx="130" cy="114" r="7" fill="none" stroke={gold} strokeWidth={3} />
+      {/* hairline */}
+      <path d="M72 70c6-12 16-20 28-20s22 8 28 20c-8-4-18-6-28-6s-20 2-28 6z" fill={hair} />
+      {/* level, unimpressed eyes; one brow up */}
+      <path d="M80 96h14M106 96h14" stroke={O} strokeWidth={3.5} strokeLinecap="round" fill="none" />
+      <path d="M82 96c1 4 9 4 10 0M108 96c1 4 9 4 10 0" fill={O} />
+      <path d="M78 87c5-3 12-3 17 0" {...o} {...none} />
+      <path d="M105 83c5-5 13-5 18-1" {...o} {...none} />
+      {/* nose, lips pressed in judgement */}
+      <path d="M100 100c-2 6-3 9 0 11h5" stroke={shade} strokeWidth={2.5} strokeLinecap="round" fill="none" />
+      <path d="M89 120c4-2 8-2 11-1 3-1 7-1 11 1-3 4-7 5-11 5s-8-1-11-5z" fill="#8f3b30" {...thin} />
+      <path d="M90 120.5c7 1 13 1 20 0" stroke="#5c211b" strokeWidth={1.5} fill="none" strokeLinecap="round" />
+      {/* the red marker, uncapped, ready to mark up your page */}
+      <path d="M146 196l14-52 10 3-14 52z" fill={ACCENT} {...o} />
+      <path d="M160 144l2-10 6 2-2 10z" fill={WHITE} {...thin} />
+      <path d="M156 152l10 3" {...thin} {...none} />
+      <path d="M138 186c-4-2-5-10 1-12l12-2 2 14z" fill={skin} {...o} />
     </>
   );
 }
@@ -200,7 +193,7 @@ function Doc() {
   );
 }
 
-const ART: Record<RoasterId, () => React.ReactElement> = { vc: Vc, critic: Critic, bro: Bro, doc: Doc };
+const ART: Record<RoasterId, () => React.ReactElement> = { vc: Vc, bro: Bro, director: Director, doc: Doc };
 
 export function Portrait({ id, className = "size-24" }: { id: RoasterId; className?: string }) {
   const Art = ART[id];

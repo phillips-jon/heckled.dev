@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { AnalysisPending, AnalysisView } from "@/components/AnalysisView";
 import { CountUp } from "@/components/CountUp";
 import { Player } from "@/components/Player";
 import { Portrait } from "@/components/Portraits";
@@ -10,6 +11,7 @@ import { RemoveButton } from "@/components/RemoveButton";
 import { ShareBar } from "@/components/ShareBar";
 import { Waiting } from "@/components/Waiting";
 import { getHeckleBySlug, IN_PROGRESS, type Box } from "@/lib/heckles";
+import { fixPrompt } from "@/lib/prompt";
 import { getRoaster } from "@/lib/roasters";
 
 const SITE = process.env.SITE_URL || "https://heckled.dev";
@@ -133,6 +135,15 @@ async function Heckle({ params }: Pick<PageProps<"/h/[slug]">, "params">) {
         </Row>
         <Row label="One real fix" accent>
           <p className="max-w-2xl text-lg leading-relaxed text-ink text-pretty">{h.script.fix}</p>
+        </Row>
+        <Row label="The analysis">
+          {h.analysis ? (
+            <AnalysisView analysis={h.analysis} prompt={fixPrompt(h.input.finalUrl, h.analysis)} />
+          ) : Date.now() - h.updatedAt < 120_000 ? (
+            <AnalysisPending slug={h.slug} />
+          ) : (
+            <p className="text-muted">No written analysis for this one.</p>
+          )}
         </Row>
         <Row label="Share">
           {/* The card people see when the link is posted, with its own download. */}

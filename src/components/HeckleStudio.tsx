@@ -93,6 +93,14 @@ export function HeckleStudio({ roasters }: { roasters: Roaster[] }) {
             return (
               <label
                 key={r.id}
+                // A click on the card would focus its hidden radio, and the
+                // browser scrolls to whatever it focuses. Select it here and
+                // focus without scrolling instead.
+                onClick={(e) => {
+                  e.preventDefault();
+                  setRoaster(r.id);
+                  e.currentTarget.querySelector("input")?.focus({ preventScroll: true });
+                }}
                 className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border bg-raised transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/30 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
                   on ? "border-accent shadow-[0_0_0_1px_var(--accent)]" : "border-line hover:border-line-strong"
                 }`}
@@ -118,6 +126,7 @@ export function HeckleStudio({ roasters }: { roasters: Roaster[] }) {
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       play(r.id);
                     }}
                     className={`absolute top-3 right-3 inline-flex h-9 items-center gap-2 rounded-full border px-3 text-[13px] backdrop-blur transition-all duration-300 active:scale-95 ${

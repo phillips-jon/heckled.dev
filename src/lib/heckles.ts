@@ -43,6 +43,16 @@ export type Script = {
   fixes: string[];
 };
 
+// The serious half: a plain-spoken review with fixes in priority order.
+export const AREAS = ["Message", "Calls to action", "Design", "Trust", "Offer", "Basics"] as const;
+export type Analysis = {
+  summary: string;
+  audience: string;
+  scores: { area: (typeof AREAS)[number]; score: number; verdict: string }[];
+  strengths: string[];
+  priorities: { title: string; area: string; effort: "quick" | "medium" | "big"; why: string; how: string }[];
+};
+
 // A beat is one TTS call: the intro, each line, the score, and the fix.
 export type Word = { w: string; s: number; e: number };
 export type Beat = {
@@ -73,6 +83,7 @@ export type Heckle = {
   imageHeight: number | null;
   audioPath: string | null;
   timeline: Timeline | null;
+  analysis: Analysis | null;
   isPublic: boolean;
   deleteToken: string;
   createdAt: number;
@@ -97,6 +108,7 @@ type Row = {
   image_height: number | null;
   audio_path: string | null;
   timestamps: string | null;
+  analysis: string | null;
   is_public: number;
   delete_token: string;
   created_at: number;
@@ -122,6 +134,7 @@ function fromRow(r: Row): Heckle {
     imageHeight: r.image_height,
     audioPath: r.audio_path,
     timeline: r.timestamps ? JSON.parse(r.timestamps) : null,
+    analysis: r.analysis ? JSON.parse(r.analysis) : null,
     isPublic: r.is_public === 1,
     deleteToken: r.delete_token,
     createdAt: r.created_at,
@@ -222,6 +235,7 @@ type Patch = Partial<{
   image_height: number;
   audio_path: string;
   timestamps: string;
+  analysis: string;
 }>;
 
 export function updateHeckle(id: string, patch: Patch) {

@@ -1,4 +1,4 @@
-import { chromium, type Browser } from "playwright-core";
+import { chromium, type Browser, type Page } from "playwright-core";
 import sharp from "sharp";
 import { checkHost } from "./ssrf";
 import type { LandingInput, PageElement } from "./heckles";
@@ -8,7 +8,7 @@ const VIEWPORT = { width: 1280, height: 800 };
 // pricing, short enough that the model can still read it.
 const MAX_HEIGHT = 3600;
 const PAGE_TIMEOUT_MS = 15_000;
-const MAX_REQUESTS = 200;
+const MAX_REQUESTS = 600;
 
 const DEFAULT_CHROME =
   process.platform === "darwin"
@@ -49,6 +49,9 @@ export async function ingestLanding(url: URL): Promise<{ input: LandingInput; sc
     acceptDownloads: false,
     javaScriptEnabled: true,
     serviceWorkers: "block",
+    // Plenty of heroes fade in with JavaScript and would screenshot blank;
+    // most sites skip those animations for visitors who ask for less motion.
+    reducedMotion: "reduce",
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) " +
       "Chrome/155.0.0.0 Safari/537.36 Heckled/1.0 (+https://heckled.dev)",
@@ -84,7 +87,12 @@ export async function ingestLanding(url: URL): Promise<{ input: LandingInput; sc
     await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
     const loadMs = Date.now() - started;
 
-    // Lazy images and scroll-triggered sections only render once seen.
+    // The first screen, exactly as it loaded: some heroes fade out once
+    // scrolled past and are slow to come back.
+    const first = await page.screenshot({ type: "png" });
+
+    // Lazy images and scroll-triggered sections only render once seen, so
+    // pass over the page once before measuring anything.
     await page.evaluate(`(async () => {
       for (let y = 0; y < Math.min(document.body.scrollHeight, ${MAX_HEIGHT}); y += 600) {
         window.scrollTo(0, y);
@@ -92,17 +100,11 @@ export async function ingestLanding(url: URL): Promise<{ input: LandingInput; sc
       }
       window.scrollTo(0, 0);
     })()`);
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(800);
 
     const data = (await page.evaluate(`(${EXTRACT_JS})(${MAX_HEIGHT})`)) as Extracted;
     const height = Math.min(Math.max(data.pageHeight, VIEWPORT.height), MAX_HEIGHT);
-    // A clip can't reach below the viewport, so take the whole page and crop.
-    const full = await page.screenshot({ type: "png", fullPage: true, animations: "disabled" });
-    const screenshot = await sharp(full)
-      .extract({ left: 0, top: 0, width: VIEWPORT.width, height })
-      .jpeg({ quality: 80, mozjpeg: true })
-      .toBuffer();
-
+    const screenshot = await captureByScrolling(page, height, first);
     return {
       input: {
         url: url.toString(),
@@ -119,6 +121,34 @@ export async function ingestLanding(url: URL): Promise<{ input: LandingInput; sc
   } finally {
     await context.close().catch(() => {});
   }
+}
+
+// Captures the page the way a visitor sees it: one screen at a time, scrolling
+// down, stitched together. A full-page screenshot stretches the viewport to
+// the whole page instead, which resets scroll-driven heroes and leaves them
+// blank. Fixed and sticky elements (headers, chat bubbles) show in the first
+// screen only, so they don't repeat down the image.
+async function captureByScrolling(page: Page, height: number, first: Buffer) {
+  const tiles: { input: Buffer; top: number; left: number }[] = [{ input: first, top: 0, left: 0 }];
+  if (height > VIEWPORT.height) {
+    await page.evaluate(`(() => {
+      for (const el of document.querySelectorAll("body *")) {
+        const p = getComputedStyle(el).position;
+        if (p === "fixed" || p === "sticky") el.style.setProperty("opacity", "0", "important");
+      }
+    })()`);
+  }
+  for (let y = VIEWPORT.height; y < height; y += VIEWPORT.height) {
+    const top = Math.min(y, height - VIEWPORT.height);
+    await page.evaluate(`window.scrollTo(0, ${top})`);
+    await page.waitForTimeout(450);
+    tiles.push({ input: await page.screenshot({ type: "png" }), top, left: 0 });
+  }
+  await page.evaluate("window.scrollTo(0, 0)");
+  return sharp({ create: { width: VIEWPORT.width, height, channels: 3, background: "#ffffff" } })
+    .composite(tiles)
+    .jpeg({ quality: 80, mozjpeg: true })
+    .toBuffer();
 }
 
 // Runs inside the page. Collects the things a roast points at, each with a

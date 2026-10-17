@@ -42,6 +42,8 @@ const MIGRATIONS = [
     heckle_id TEXT NOT NULL REFERENCES heckles (id) ON DELETE CASCADE,
     created_at INTEGER NOT NULL
   );`,
+  // The written review, filled in while the roast is being voiced.
+  `ALTER TABLE heckles ADD COLUMN analysis TEXT;`,
 ];
 
 function open() {

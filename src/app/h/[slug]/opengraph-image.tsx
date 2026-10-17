@@ -52,13 +52,13 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       >
         <div style={{ display: "flex", flexDirection: "column", flex: 1, paddingRight: 40 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 30, letterSpacing: 1 }}>
-            <svg width="44" height="44" viewBox="0 0 40 40">
-              <path
-                d="M20 5c3 0 4 3 6 3s4-2 6 0-1 4 0 6 4 2 4 5-3 3-3 5 2 4 0 6-4 0-6 1-2 4-5 4-3-3-5-3-4 2-6 0-1-4-3-5-5-1-5-4 3-3 3-5-2-4 0-6 4 0 5-2-1-4 1-5 4 0 6 0 2-4 6-4z"
-                fill={ACCENT}
-              />
-              <path d="M13.5 15.5c1-2 3-3.5 5-4" stroke="#fff" strokeOpacity="0.55" strokeWidth="2" strokeLinecap="round" fill="none" />
-              <path d="M20 13c-1-3 0-5 2-6M20 13c-3-1-5 0-6 1M20 13c3-1 5 0 6 2" stroke="#3f8f3a" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+            <svg width="48" height="48" viewBox="0 0 40 40">
+              <g fill="#ef3b24">
+              <path d="M20 5c3 0 4 3 6 3s4-2 6 0-1 4 0 6 4 2 4 5-3 3-3 5 2 4 0 6-4 0-6 1-2 4-5 4-3-3-5-3-4 2-6 0-1-4-3-5-5-1-5-4 3-3 3-5-2-4 0-6 4 0 5-2-1-4 1-5 4 0 6 0 2-4 6-4z"/>
+              <circle cx="35.5" cy="31" r="1.6"/>
+              <circle cx="5" cy="9" r="1.3"/>
+              <circle cx="9" cy="35" r="1.1"/>
+              </g>
             </svg>
             HECKLED!
           </div>

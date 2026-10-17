@@ -71,7 +71,7 @@ export function Waiting({ slug, initial }: { slug: string; initial: string }) {
           </li>
         ))}
       </ol>
-      <p className="mt-8 font-mono text-xs text-faint">Usually about twenty seconds. Stay for the show.</p>
+      <p className="mt-8 font-mono text-xs text-faint">Usually about forty seconds. Stay for the show.</p>
     </div>
   );
 }
