@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { countRecentByIp, countSince, createHeckle, findCached, hashIp } from "@/lib/heckles";
 import { getRoaster, isLanguage } from "@/lib/roasters";
 import { checkHost, normalizeUrl } from "@/lib/ssrf";
+import { hasVoiceCredits } from "@/lib/voice";
 import { wakeWorker } from "@/lib/worker";
 
 // Part of the cache key: bump it when the roasts change enough that a cached
@@ -29,7 +30,9 @@ export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-real-ip") || "local";
   const ipHash = hashIp(ip);
   if (countRecentByIp(ipHash, 3600_000) >= PER_HOUR) return NextResponse.json({ error: "rate" }, { status: 429 });
-  if (countSince(24 * 3600_000) >= PER_DAY) return NextResponse.json({ error: "busy" }, { status: 503 });
+  if (countSince(24 * 3600_000) >= PER_DAY || !(await hasVoiceCredits())) {
+    return NextResponse.json({ error: "busy" }, { status: 503 });
+  }
 
   const heckle = createHeckle({ mode: "landing", sourceUrl: url.toString(), inputHash, roaster: roaster.id, language, ipHash });
   wakeWorker();

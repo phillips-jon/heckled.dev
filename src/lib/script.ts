@@ -100,6 +100,19 @@ ${input.text}`;
 
 const client = new Anthropic();
 
+// Dollars per million tokens, input and output (thinking bills as output).
+const PRICE: Record<string, [number, number]> = {
+  "claude-opus-5-5": [4, 20],
+  "claude-sonnet-5-5": [2, 10],
+};
+
+// One line per Claude call in the server log, so spend per roast is visible.
+function logUsage(step: string, model: string, usage: Anthropic.Usage) {
+  const [inp, out] = PRICE[model] ?? [0, 0];
+  const cost = (usage.input_tokens * inp + usage.output_tokens * out) / 1e6;
+  console.log(`[heckled] ${step} ${model}: ${usage.input_tokens} in, ${usage.output_tokens} out, $${cost.toFixed(4)}`);
+}
+
 // Two views of the page: the first screen at full resolution, where the hero
 // and its copy are legible, and the whole page scaled down for layout.
 async function views(screenshot: Buffer) {
@@ -158,6 +171,7 @@ Roast this landing page as ${roaster.name}.`,
     ],
   });
 
+  logUsage("script", SCRIPT_MODEL, response.usage);
   if (response.stop_reason === "refusal") return { refused: true, reason: "We don't roast that." };
   const out = response.parsed_output;
   if (!out) throw new Error(`The script came back unreadable (stop: ${response.stop_reason}).`);
@@ -225,6 +239,7 @@ Rules:
 - Plain, warm, direct language. No jokes, no hype, no emoji, no markdown.`,
     messages: [{ role: "user", content: [...images(hero, whole), { type: "text", text: `${describeLanding(input)}\n\nReview this landing page.` }] }],
   });
+  logUsage("analysis", ANALYSIS_MODEL, response.usage);
   const out = response.parsed_output;
   if (response.stop_reason === "refusal" || !out) return null;
   return {

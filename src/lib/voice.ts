@@ -104,6 +104,30 @@ function placeWords(text: string, segments: Segment[], offset: number): Word[] {
 
 const round = (n: number) => Math.round(n * 1000) / 1000;
 
+// Gradium bills a credit per character spoken, about 1,200 for a full set.
+// New heckles stop being accepted below this many, so a roast never runs out
+// of voice halfway through.
+const CREDIT_FLOOR = Number(process.env.GRADIUM_CREDIT_FLOOR || 5000);
+const credits = (globalThis as unknown as { __heckledCredits?: { at: number; remaining: number } });
+
+export async function hasVoiceCredits() {
+  const hit = credits.__heckledCredits;
+  if (hit && Date.now() - hit.at < 5 * 60_000) return hit.remaining > CREDIT_FLOOR;
+  try {
+    const res = await fetch("https://api.gradium.ai/api/usages/credits", {
+      headers: { "x-api-key": process.env.GRADIUM_API_KEY! },
+      signal: AbortSignal.timeout(5000),
+    });
+    const { remaining_credits } = (await res.json()) as { remaining_credits: number };
+    credits.__heckledCredits = { at: Date.now(), remaining: remaining_credits };
+    if (remaining_credits <= CREDIT_FLOOR) console.warn(`[heckled] Gradium credits low: ${remaining_credits}`);
+    return remaining_credits > CREDIT_FLOOR;
+  } catch {
+    // If the balance can't be read, don't block the show over it.
+    return true;
+  }
+}
+
 const TARGET = "I=-16:TP=-1.5:LRA=11";
 
 export async function normalize(input: string, output: string) {
