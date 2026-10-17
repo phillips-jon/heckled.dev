@@ -1,0 +1,223 @@
+#!/bin/bash
+# Deploy heckled.dev. Runs on the server as the joncphillips user:
+#
+#   /var/www/heckled.dev/deploy/release-deploy [--force | --prepare]
+#
+# The GitHub Action runs it on every push to main. Each deploy builds a new
+# release beside the live one, so a build never touches what is serving:
+#
+#   /var/www/heckled.dev-repo.git          bare clone that fetches from GitHub
+#   /var/www/heckled.dev-releases/<name>/  one git worktree per release, built where it sits
+#   /var/www/heckled.dev-shared/           linked into every release:
+#       .env                              production settings (DATA_DIR points at data/)
+#       data/                             heckled.db and media/ (screenshots, audio): the whole application state
+#   /var/www/heckled.dev                   symlink to the live release
+#
+# The heckled unit runs /var/www/heckled.dev/.next/standalone/server.js and nginx
+# serves .next/static through the same path, so both follow the symlink.
+#
+# A new release gets npm ci and next build on the Node the service runs on
+# (/opt/node-heckled; better-sqlite3 is built for one Node ABI), with the
+# build's own database pointed at a scratch file, then `npm run bundle`. The
+# standalone server is started on a spare port against a snapshot COPY of the
+# live database (so any new migration runs on the copy first), with its worker
+# off so it never picks up a live heckle, and / must answer 200. Only then is
+# the release marked .release-ok, the symlink moved (one rename) and heckled
+# restarted. If / doesn't answer 200 within 30 seconds after the restart, the
+# symlink goes back and the service restarts on the previous release. The
+# newest releases that went live are kept for deploy/rollback.
+#
+#   --force    build a release even when the live one is current
+#   --prepare  build and check a release but don't switch to it (the first
+#              release, before the live path became a symlink)
+
+set -Eeuo pipefail
+# With SIGPIPE ignored, a dropped SSH connection makes the next write fail
+# (and trips the ERR trap) instead of killing this script mid-step.
+trap '' PIPE
+
+SITE=heckled.dev
+SERVICE=heckled
+LIVE=/var/www/$SITE
+REPO=/var/www/$SITE-repo.git
+RELEASES=/var/www/$SITE-releases
+SHARED=/var/www/$SITE-shared
+DB=$SHARED/data/heckled.db
+NODE_PREFIX=/opt/node-heckled
+HEALTH_PATH=/
+KEEP=3
+
+MODE="${1:-}"
+PREPARE=false
+[ "$MODE" = "--prepare" ] && PREPARE=true
+
+if [ "$(id -u)" -eq 0 ]; then
+    echo "Run this as joncphillips, not root." >&2
+    exit 1
+fi
+for path in "$REPO" "$RELEASES" "$SHARED/.env" "$SHARED/data" "$DB" "$NODE_PREFIX/bin/node"; do
+    if [ ! -e "$path" ]; then
+        echo "Missing $path, so the release layout isn't set up (README.md)." >&2
+        exit 1
+    fi
+done
+if [ -e "$LIVE" ] && [ ! -L "$LIVE" ] && ! $PREPARE; then
+    echo "$LIVE is not a symlink to a release yet; build one with --prepare and switch to it by hand." >&2
+    exit 1
+fi
+LIVE_PORT=$(grep -E '^PORT=' "$SHARED/.env" | tail -n1 | cut -d= -f2- | tr -d '"'"'"' \r')
+[ -n "$LIVE_PORT" ] || { echo "No PORT in $SHARED/.env." >&2; exit 1; }
+export PATH="$NODE_PREFIX/bin:$PATH"
+
+# One deploy at a time; rollback takes the same lock.
+exec 9>"/tmp/${SITE//./-}-deploy.lock"
+flock -n 9 || { echo "Another deploy is already running." >&2; exit 1; }
+
+echo "Fetching..."
+git -C "$REPO" fetch --quiet origin
+NEW=$(git -C "$REPO" rev-parse refs/remotes/origin/main)
+CURRENT=""
+CURRENT_DIR=""
+if [ -L "$LIVE" ]; then
+    CURRENT_DIR=$(readlink -f "$LIVE")
+    CURRENT=$(git -C "$CURRENT_DIR" rev-parse HEAD 2>/dev/null || true)
+fi
+if [ "$NEW" = "$CURRENT" ] && [ "$MODE" != "--force" ] && ! $PREPARE; then
+    echo "Already live: $(git -C "$REPO" log -1 --format='%h %s' "$NEW")"
+    exit 0
+fi
+
+# Release names start with their build time, and rollback and pruning go by
+# that order, so no two releases may share a second.
+STAMP=$(date +%Y%m%d-%H%M%S)
+while ls -d "$RELEASES/$STAMP"-* >/dev/null 2>&1; do
+    sleep 1
+    STAMP=$(date +%Y%m%d-%H%M%S)
+done
+DIR="$RELEASES/$STAMP-$(git -C "$REPO" rev-parse --short "$NEW")"
+SCRATCH=$(mktemp -d "$RELEASES/.scratch-XXXXXX")
+chmod 700 "$SCRATCH"
+CREATED=false
+SERVER_PID=""
+
+abandon() {
+    # set -E hands this trap to $(...) subshells too. A failure in one ends
+    # only that subshell; the main shell then sees its command fail.
+    [ "${BASH_SUBSHELL:-0}" -gt 0 ] && exit 1
+    trap - ERR INT TERM HUP
+    set +e
+    echo "Deploy failed. The live site is unchanged; removing the unfinished release." >&2
+    [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null
+    rm -rf "$SCRATCH"
+    cd /
+    # Only a release this run created, and never the live one.
+    if $CREATED && [ "$(readlink -f "$LIVE")" != "$DIR" ]; then
+        git -C "$REPO" worktree remove --force "$DIR" 2>/dev/null || rm -rf "$DIR"
+    fi
+    git -C "$REPO" worktree prune
+    exit 1
+}
+trap abandon ERR INT TERM HUP
+
+wait_for_200() { # url seconds
+    local code=000
+    for _ in $(seq 1 "$2"); do
+        code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$1" || true)
+        [ "$code" = "200" ] && return 0
+        sleep 1
+    done
+    echo "  $1 answered $code" >&2
+    return 1
+}
+
+echo "Building $(basename "$DIR")..."
+git -C "$REPO" worktree add --quiet --detach "$DIR" "$NEW"
+CREATED=true
+cd "$DIR"
+
+# Files that live only on the server. data/ is linked after the build:
+# Next's file tracing refuses a symlink that leads outside the project.
+ln -s "$SHARED/.env" .env
+
+echo "Installing npm packages (Node $(node -v))..."
+# 9>&-: nothing started here may hold the deploy lock.
+npm ci --no-audit --no-fund 9>&-
+
+echo "Building..."
+# next build opens the database from parallel workers; give them a scratch
+# file, never production data.
+DATABASE_PATH="$SCRATCH/build.db" NODE_OPTIONS="--max-old-space-size=4096" NEXT_TELEMETRY_DISABLED=1 npm run build 9>&-
+npm run bundle 9>&-
+[ -f .next/standalone/server.js ] || { echo "The build left no .next/standalone/server.js." >&2; false; }
+rm -f .next/standalone/.env .next/standalone/.env.*
+ln -s "$SHARED/data" data
+
+echo "Checking the new build on a spare port, against a copy of the database..."
+sqlite3 -readonly "$DB" ".backup '$SCRATCH/check.db'"
+PORT=$((3900 + RANDOM % 90))
+while (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; do PORT=$((PORT + 1)); done
+# Settings come from .env; the variables given here win over it.
+(cd .next/standalone && DATABASE_PATH="$SCRATCH/check.db" HECKLED_WORKER=off PORT=$PORT HOSTNAME=127.0.0.1 NODE_ENV=production \
+    exec "$NODE_PREFIX/bin/node" --env-file="$SHARED/.env" server.js) >"$SCRATCH/check.log" 2>&1 9>&- &
+SERVER_PID=$!
+if ! wait_for_200 "http://127.0.0.1:$PORT$HEALTH_PATH" 40; then
+    echo "The new build didn't answer $HEALTH_PATH. Its output:" >&2
+    tail -20 "$SCRATCH/check.log" >&2
+    false
+fi
+kill "$SERVER_PID" 2>/dev/null || true
+wait "$SERVER_PID" 2>/dev/null || true
+SERVER_PID=""
+rm -rf "$SCRATCH"
+touch .release-ok
+
+if $PREPARE; then
+    trap - ERR INT TERM HUP
+    echo "Prepared $DIR (not live)."
+    exit 0
+fi
+
+switch_to() {
+    ln -sfn "$1" "$LIVE.next"
+    mv -T "$LIVE.next" "$LIVE"
+}
+
+# Go live: move the symlink, then restart onto it.
+trap - ERR INT TERM HUP
+switch_to "$DIR"
+echo "Restarting $SERVICE..."
+if ! sudo -n /usr/bin/systemctl restart "$SERVICE" || ! wait_for_200 "http://127.0.0.1:$LIVE_PORT$HEALTH_PATH" 30; then
+    echo "The new release didn't come up." >&2
+    if [ -n "$CURRENT_DIR" ]; then
+        switch_to "$CURRENT_DIR"
+        sudo -n /usr/bin/systemctl restart "$SERVICE" || true
+        if wait_for_200 "http://127.0.0.1:$LIVE_PORT$HEALTH_PATH" 30; then
+            echo "Went back to $(basename "$CURRENT_DIR"); it is serving." >&2
+        else
+            echo "Went back to $(basename "$CURRENT_DIR"), but it isn't answering either. Check: journalctl -u $SERVICE -n 50" >&2
+        fi
+    fi
+    rm -f "$DIR/.release-ok"
+    exit 1
+fi
+echo "Live: $(git log -1 --format='%h %s')"
+
+# Keep the newest releases that went live, for rollback; anything else goes.
+# Older releases don't need their build-time node_modules (the standalone
+# server carries its own). Only ever touches $RELEASES, never the live one.
+LIVE_DIR=$(readlink -f "$LIVE")
+kept=0
+for old in $(ls -1d "$RELEASES"/*/ 2>/dev/null | sed 's#/$##' | sort -r); do
+    if [ "$old" = "$LIVE_DIR" ]; then
+        kept=$((kept + 1))
+    elif [ -f "$old/.release-ok" ] && [ "$kept" -lt "$KEEP" ]; then
+        kept=$((kept + 1))
+        rm -rf "$old/node_modules"
+    else
+        git -C "$REPO" worktree remove --force "$old" 2>/dev/null || rm -rf "$old"
+    fi
+done
+git -C "$REPO" worktree prune || true
+find "$RELEASES" -maxdepth 1 -name '.scratch-*' -mmin +120 -exec rm -rf {} + 2>/dev/null || true
+
+echo "Deployed $(git log -1 --format=%h)."

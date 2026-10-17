@@ -1,0 +1,22 @@
+{
+  "pronunciations": {
+    "en": "rhpJq1kyHC9Uw57y",
+    "fr": "AhIOmOTI3VuZAOpY"
+  },
+  "voices": {
+    "vc": {
+      "en": "GETwtFlreXdAiyKE",
+      "fr": "f6M2srdNuXUJjCdt"
+    },
+    "critic": {
+      "en": "0JI9C2jCp4GHYFyE",
+      "fr": "ceOlj8RKU2DAfEsd"
+    },
+    "bro": {
+      "en": "gkubL7beBvlV4o0m"
+    },
+    "doc": {
+      "en": "XD9ASYxDoZiNMzmr"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+#!/bin/bash
+# Point heckled.dev back at an earlier release and restart heckled onto it:
+#
+#   /var/www/heckled.dev/deploy/rollback          # the release before the live one
+#   /var/www/heckled.dev/deploy/rollback <name>   # one listed in /var/www/heckled.dev-releases
+#
+# Only releases that passed their checks (marked .release-ok) qualify. The next
+# push to main deploys as usual, so push a fix (or a revert) next.
+
+set -euo pipefail
+
+SITE=heckled.dev
+SERVICE=heckled
+LIVE=/var/www/$SITE
+RELEASES=/var/www/$SITE-releases
+HEALTH_URL=http://127.0.0.1:3015/
+
+current=$(readlink -f "$LIVE")
+if [ -n "${1:-}" ]; then
+    target="$RELEASES/$(basename "$1")"
+else
+    # Release names start with their build time, so they sort oldest first.
+    target=$(for d in $(ls -1d "$RELEASES"/*/ 2>/dev/null | sed 's#/$##' | sort); do
+        if [ -f "$d/.release-ok" ]; then echo "$d"; fi
+    done | awk -v cur="$current" '$0 == cur { print prev } { prev = $0 }')
+fi
+
+if [ -z "$target" ] || [ ! -f "$target/.release-ok" ] || [ "$(readlink -f "$target")" = "$current" ]; then
+    echo "No earlier release that passed its checks to roll back to (live: $(basename "$current"))." >&2
+    exit 1
+fi
+
+# Never at the same time as a deploy.
+exec 9>"/tmp/${SITE//./-}-deploy.lock"
+flock -n 9 || { echo "A deploy is running; try again when it finishes." >&2; exit 1; }
+
+ln -sfn "$target" "$LIVE.next"
+mv -T "$LIVE.next" "$LIVE"
+sudo -n /usr/bin/systemctl restart "$SERVICE"
+code=000
+for _ in $(seq 1 30); do
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$HEALTH_URL" || true)
+    [ "$code" = "200" ] && break
+    sleep 1
+done
+if [ "$code" = "200" ]; then
+    echo "Rolled back to $(basename "$target"): $(git -C "$target" log -1 --format='%h %s')"
+else
+    echo "Rolled back to $(basename "$target"), but $HEALTH_URL answers $code. Check: journalctl -u $SERVICE -n 50" >&2
+    exit 1
+fi

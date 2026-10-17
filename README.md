@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Heckled
 
-## Getting Started
+heckled.dev heckles anything you made. Paste a landing page URL and a voiced
+roaster performs a 45 to 60 second roast, with subtitles synced word by word
+and a spotlight on whatever is being roasted, then gives you one real fix.
 
-First, run the development server:
+Built for the [Active Builders × Gradium AI builder challenge](https://activebuilders.dev).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## How it works
+
+1. **Ingest** (`src/lib/landing.ts`): headless Chrome loads the page, screenshots
+   it, and collects the headline, buttons, sections, pricing and proof with
+   their boxes. Every request the page makes passes the public-address check
+   in `src/lib/ssrf.ts`.
+2. **Script** (`src/lib/script.ts`): Claude Sonnet 5.5 sees the screenshot and
+   the element list and writes the roast as structured JSON: five beats, each
+   pointing at an element, a score, the quotable line, and the fix.
+3. **Voice** (`src/lib/voice.ts`): Gradium speaks each beat with the roaster's
+   designed voice and pronunciation dictionary; ffmpeg joins them into one
+   MP3, and the word timestamps become the player's timeline.
+4. **Play** (`src/components/Player.tsx`): the page pans and zooms to each
+   target while captions follow the voice.
+
+The queue is the `heckles` table in SQLite, worked by a loop that
+`src/instrumentation.ts` starts inside the Next.js server. One process, no
+other services.
+
+## Development
+
+Needs Node 20.9+, ffmpeg, and Google Chrome.
+
+```sh
+npm install
+cp .env.example .env.local   # add the Gradium and Anthropic keys
+npm run dev                  # http://localhost:3015
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run voices` designs the roasters' voices with Gradium Voice Design,
+localizes them to French, creates the pronunciation dictionaries, and writes
+the ids to `src/config/voices.json`. The plan allows six custom voices; the
+rest fall back to the flagship voices in `src/lib/roasters.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Push to `main` and GitHub Actions runs `deploy/release-deploy` on the server
+over SSH (once the repository variable `DEPLOY_ENABLED` is `true`). It builds
+a new release beside the live one, checks it on a spare port against a copy
+of the database, then switches the symlink and restarts `heckled`.
+`deploy/rollback` goes back one release.
 
-## Learn More
+Server layout:
 
-To learn more about Next.js, take a look at the following resources:
+```
+/var/www/heckled.dev-repo.git    bare clone, fetches from GitHub (deploy key: github-heckled)
+/var/www/heckled.dev-releases/   one worktree per release
+/var/www/heckled.dev-shared/     .env and data/ (heckled.db, media/)
+/var/www/heckled.dev             symlink to the live release
+/opt/node-heckled                Node 24, the one better-sqlite3 is built for
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The unit file is `deploy/heckled.service`, the nginx site `deploy/nginx.conf`.
+The deploy user restarts the service through a sudoers entry limited to
+`/usr/bin/systemctl restart heckled`.

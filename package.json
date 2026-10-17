@@ -3,21 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3015",
     "build": "next build",
-    "start": "next start"
+    "postbuild": "rm -f .next/standalone/.env .next/standalone/.env.local .next/standalone/.env.production .next/standalone/.env.production.local",
+    "bundle": "mkdir -p .next/standalone/.next/cache && rsync -a --delete public/ .next/standalone/public/ && rsync -a --delete .next/static/ .next/standalone/.next/static/",
+    "start": "node .next/standalone/server.js",
+    "typecheck": "tsc --noEmit",
+    "voices": "tsx --env-file=.env.local scripts/setup-voices.mts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "better-sqlite3": "^12.11.1",
+    "nanoid": "^5.1.16",
     "next": "16.4.2",
+    "playwright-core": "^1.64.1",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "description": "Heckle anything you made: a voiced roast of your landing page, with one real fix.",
+  "engines": {
+    "node": ">=20.9"
   }
 }

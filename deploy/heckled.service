@@ -1,0 +1,52 @@
+# heckled.dev: the Next.js server, which also runs the heckle worker and
+# drives headless Chrome for screenshots.
+#
+# Install as /etc/systemd/system/heckled.service. It runs the live release
+# through the /var/www/heckled.dev symlink; deploy/release-deploy restarts it
+# with `sudo -n systemctl restart heckled` (see deploy/README.md for sudoers).
+
+[Unit]
+Description=Heckled (Next.js)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=joncphillips
+Group=joncphillips
+WorkingDirectory=/var/www/heckled.dev
+# The file first, then the settings that must win over anything in it: the
+# loopback binding keeps nginx the only way in.
+EnvironmentFile=/var/www/heckled.dev-shared/.env
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+# Chrome wants somewhere to write its profile and crash reports.
+Environment=HOME=/tmp
+Environment=XDG_CONFIG_HOME=/tmp/.config
+Environment=XDG_CACHE_HOME=/tmp/.cache
+# Named outright: better-sqlite3 is built for this Node's ABI.
+ExecStart=/opt/node-heckled/bin/node /var/www/heckled.dev/.next/standalone/server.js
+
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=20
+SuccessExitStatus=143 SIGTERM
+
+# The same sandbox as activebuilders, which also runs Chrome: no namespace or
+# syscall restrictions, which Chrome's own sandbox needs. Writes go only to
+# the shared data directory and Next's cache.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=/var/www/heckled.dev-shared/data
+ReadWritePaths=/var/www/heckled.dev/.next/standalone/.next/cache
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+MemoryMax=2G
+
+[Install]
+WantedBy=multi-user.target
