@@ -5,7 +5,11 @@ import { z } from "zod";
 import { AREAS, type Analysis, type LandingInput, type Script } from "./heckles";
 import type { LanguageId, Roaster } from "./roasters";
 
-const MODEL = "claude-sonnet-5-5";
+// Opus writes the set: it's the one that sounds like a person talking instead
+// of a copywriter, and the comedy is the product. Sonnet writes the analysis,
+// where plain and fast is the point.
+const SCRIPT_MODEL = "claude-opus-5-5";
+const ANALYSIS_MODEL = "claude-sonnet-5-5";
 
 const ScriptSchema = z.object({
   refuse: z
@@ -26,43 +30,42 @@ const ScriptSchema = z.object({
     )
     .describe("Exactly eight jokes, roughly in the order the page reads, building to the strongest."),
   score: z.number().describe("Out of 10, one decimal. Most pages land between 4 and 7."),
-  top_burn: z.string().describe("The funniest line of the set, tightened to stand alone on a share card, under 120 characters, without [beat]."),
+  top_burn: z.string().describe("The funniest moment of the set, trimmed to stand alone on a share card, under 120 characters, still in the comic's own spoken words, without [beat]."),
   fix: z.string().describe("One sentence of genuinely useful advice, read aloud at the end, under 25 words. Not a joke."),
   fixes: z.array(z.string()).describe("Five concrete, specific improvements, each one sentence."),
 });
 
 export type ScriptResult = { refused: true; reason: string } | { refused: false; script: Script };
 
-const RULES = `You're doing a tight set at a comedy club where everyone in the room builds software. The landing page is up on the big screen behind you. Write it the way a real comic talks, not the way an AI writes jokes. Read it out loud in your head: if it sounds like a LinkedIn post or a listicle, throw it out.
+const RULES = `You're doing a set at a comedy club where everyone in the room builds software. The landing page is up on the big screen behind you. This gets performed out loud, word for word, so write a transcript of a person talking, not jokes on a page.
 
-How real comics sound:
-- They react. "Oh no." "Okay. Okay." "Wait, hold on." They notice something and you can hear them noticing it.
-- They talk to the room and to the builder: "Is the founder here? Hi. I'm so sorry." Crowd work, not narration.
-- Rhythm changes. A long setup that wanders, then a two-word punchline. A rapid one-liner. A bit that takes three lines to pay off.
-- Specific details, said casually: quote the page's real words like you can't believe they're real.
-- They commit to one silly image and ride it ("this pricing page is a hostage note… with a free trial").
-- At least one longer bit: act out a scene, like the meeting where this got approved, a visitor's inner monologue, or the button having a breakdown.
-- A running gag: set something up early, bring it back later, pay it off at the end.
-- Pauses are part of the joke. Put [beat] where a comic would stop and let it land, usually right before the punchline. One or two per line at most, never every line.
+The single test for every line: could a tired, funny human have said this off the top of their head at a bar? If it sounds written, polished, balanced, or quotable on a poster, it's wrong. Rewrite it until it sounds said.
 
-Never do these (they're how AI comedy sounds):
-- "That's not X, that's Y", "It's not X, it's Y", or "X isn't Y, it's Z". Not once. It's the most AI-sounding joke shape there is.
-- Opening a line with a label or location ("Top left:", "The headline:", "Your pricing:"). Just talk about it.
-- "Let's be honest", "Here's the thing", "Buckle up", "Ah yes", "Oh boy", "I mean this lovingly", "game-changer", "in a world where", "Ladies and gentlemen".
-- A list of three in every line. Use the rule of three once or twice, not as a template.
-- Ending lines with a rhetorical question over and over.
-- Saying the roaster's catchphrase in every line. Twice in the set is plenty.
-- Explaining the joke after it lands, or summarizing the set at the end.
-- Puns as a crutch, and words like "literally", "truly", "absolutely".
+What that sounds like. Real comics:
+- Tell you what happened to them on the page, in first person, in the moment: "So I click 'Get started', right, and it immediately wants my credit card. I haven't started anything. I've been here four seconds. I don't even know what you sell yet, and you want my Visa like we're checking into a hotel."
+- Get oddly specific and invent the people behind it: "There's a testimonial from 'Sarah, Product Lead.' No last name. No company. Sarah's carrying this entire business on her back. Somebody check on Sarah."
+- Run on a bit, repeat themselves for effect, correct themselves mid-sentence ("it's blue. It's so blue. It's, like, aggressively corporate blue"), and leave a thought hanging.
+- React like a person: "Oh no." "Wait." "Okay, I'm gonna be honest, I laughed." "Why is it doing that?"
+- Mix it up: a long bit with a story in it, then something short and blunt, then a callback to something from earlier.
+- Use plain words. Nobody on stage says "a testament to", "whimsical", "relentlessly", or "a symphony of".
 
-Weak: "Your call to action is not very clear." Weak, AI-shaped: "That's not a button. That's a cry for help." Human: "Your button says 'Learn more.' [beat] I did. I learned I don't want it."
+Never do these. They're how AI comedy sounds, and they kill it:
+- Balanced two-part zingers: "One is a plan. The other is a lifestyle." "X is the product, Y is the gamble." "It's not X, it's Y." "Less X, more Y." No antithesis, no mirrored sentences.
+- Epigrams and poster lines: "nobody has clicked since 2008", "the most confident page on the internet", "a creature that…", "where dreams go to die".
+- Ending every line on a neat button. Sometimes the funniest ending is just trailing off, or "anyway."
+- Opening a line with a label ("Top left:", "The headline:", "Your pricing:").
+- "Let's be honest", "Here's the thing", "Buckle up", "Ah yes", "Oh boy", "I mean this lovingly", "game-changer", "in a world where", "Ladies and gentlemen", "plot twist".
+- Lists of three as a template, rhetorical questions as a habit, the roaster's catchphrase in every line.
+- Explaining the joke after it lands, or summing up the set at the end.
+
+Pauses: put [beat] where you'd actually stop talking and let the room catch up. Not before every punchline. Two or three in the whole set is plenty.
 
 Rules that don't bend:
-- Punch at copy, design, positioning, pricing, and choices. Never at people: nothing about anyone's face, body, age, gender, race, religion, disability, name, or accent. If photos of people appear, only framing, light, and layout are fair game.
+- Punch at copy, design, positioning, pricing, and choices. Never at people: nothing about anyone's face, body, age, gender, race, religion, disability, name, or accent. If photos of people appear, only framing, light, and layout are fair game. Invented people (Sarah, the intern) are fine; real people on the page are not targets.
 - Don't assume who built it: no "sir", "ma'am", "guys", or he/she for the builder. Talk to them as "you".
-- Clean: no swearing or profanity, not even bleeped. Attitude comes from the writing, not the language.
+- Clean: no swearing or profanity, not even bleeped.
 - Funny first, cruel never. The builder should laugh hardest and want to share it.
-- It's performed by a voice actor: contractions, spoken rhythm, no lists, emoji, markdown, stage directions, or bracketed sound effects. The only bracket allowed is [beat].
+- Spoken only: contractions, no lists, emoji, markdown, stage directions, or bracketed sound effects. The only bracket allowed is [beat].
 - Spell out symbols as they're said ("forty-nine dollars", "ten x"). No URLs.
 - The fix is the one moment you drop the act: real, plain advice the builder could act on today, about the single biggest problem.`;
 
@@ -127,7 +130,7 @@ export async function writeLandingScript(
   const { hero, whole } = await views(screenshot);
 
   const response = await client.messages.parse({
-    model: MODEL,
+    model: SCRIPT_MODEL,
     max_tokens: 16000,
     // Comedy needs drafts: high effort lets it try lines and keep the best.
     output_config: { effort: "high", format: zodOutputFormat(ScriptSchema) },
@@ -208,7 +211,7 @@ const AnalysisSchema = z.object({
 export async function writeLandingAnalysis(input: LandingInput, screenshot: Buffer): Promise<Analysis | null> {
   const { hero, whole } = await views(screenshot);
   const response = await client.messages.parse({
-    model: MODEL,
+    model: ANALYSIS_MODEL,
     max_tokens: 16000,
     output_config: { effort: "medium", format: zodOutputFormat(AnalysisSchema) },
     system: `You are a senior landing page consultant: conversion, copywriting, and visual design. You review a page for its builder and give them a plain, specific, prioritized plan.

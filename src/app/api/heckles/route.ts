@@ -7,7 +7,7 @@ import { wakeWorker } from "@/lib/worker";
 
 // Part of the cache key: bump it when the roasts change enough that a cached
 // one from before would be a worse show.
-const PIPELINE = "v3";
+const PIPELINE = "v4";
 const PER_HOUR = Number(process.env.RATE_LIMIT_PER_HOUR || 3);
 // The kill switch on spend: no new heckles past this many in a day.
 const PER_DAY = Number(process.env.DAILY_HECKLE_CAP || 400);

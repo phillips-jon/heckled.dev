@@ -12,9 +12,10 @@ Built for the [Active Builders × Gradium AI builder challenge](https://activebu
    it, and collects the headline, buttons, sections, pricing and proof with
    their boxes. Every request the page makes passes the public-address check
    in `src/lib/ssrf.ts`.
-2. **Script** (`src/lib/script.ts`): Claude Sonnet 5.5 sees the screenshot and
-   the element list and writes the roast as structured JSON: five beats, each
-   pointing at an element, a score, the quotable line, and the fix.
+2. **Script** (`src/lib/script.ts`): Claude Opus 5.5 sees the screenshot and
+   the element list and writes the set as structured JSON: eight bits, each
+   pointing at the elements it mentions, a score, the quotable line, and the
+   fix. Claude Sonnet 5.5 writes the plain-spoken analysis alongside.
 3. **Voice** (`src/lib/voice.ts`): Gradium speaks each beat with the roaster's
    designed voice and pronunciation dictionary; ffmpeg joins them into one
    MP3, and the word timestamps become the player's timeline.
