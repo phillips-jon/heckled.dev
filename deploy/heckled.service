@@ -12,8 +12,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=joncphillips
-Group=joncphillips
+User=heckled
+Group=heckled
+UMask=0007
 WorkingDirectory=/var/www/heckled.dev
 # The file first, then the settings that must win over anything in it: the
 # loopback binding keeps nginx the only way in.
@@ -41,7 +42,7 @@ PrivateTmp=yes
 ProtectSystem=strict
 ReadWritePaths=/var/www/heckled.dev-shared/data
 ReadWritePaths=/var/www/heckled.dev/.next/standalone/.next/cache
-ProtectHome=read-only
+ProtectHome=yes
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes

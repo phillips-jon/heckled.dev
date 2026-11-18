@@ -62,3 +62,19 @@ Server layout:
 The unit file is `deploy/heckled.service`, the nginx site `deploy/nginx.conf`.
 The deploy user restarts the service through a sudoers entry limited to
 `/usr/bin/systemctl restart heckled`.
+
+The app runs as its own user, `heckled`, so a compromise stays inside it. The
+deploy runs as `joncphillips`, which is in the `heckled` group so it can read
+the database, and `release-deploy` refuses to run unless `data/` belongs to
+that group. One-time setup (as root):
+
+```bash
+S=/var/www/heckled.dev-shared
+useradd --system --user-group --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin heckled
+usermod -aG heckled joncphillips
+chgrp heckled $S $S/.env && chmod 640 $S/.env
+chown -R heckled:heckled $S/data
+find $S/data -type d -exec chmod 2770 {} + && find $S/data -type f -exec chmod 660 {} +
+cp /var/www/heckled.dev/deploy/heckled.service /etc/systemd/system/heckled.service
+systemctl daemon-reload && systemctl restart heckled
+```

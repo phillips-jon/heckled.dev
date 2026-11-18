@@ -34,6 +34,13 @@ fi
 exec 9>"/tmp/${SITE//./-}-deploy.lock"
 flock -n 9 || { echo "A deploy is running; try again when it finishes." >&2; exit 1; }
 
+# The image optimizer caches into .next/cache at runtime, as the app's user
+# (heckled): the one folder in a release that group may write.
+mkdir -p "$target/.next/standalone/.next/cache"
+chgrp -R heckled "$target/.next/standalone/.next/cache"
+chmod -R g+rwX "$target/.next/standalone/.next/cache"
+find "$target/.next/standalone/.next/cache" -type d -exec chmod g+s {} +
+
 ln -sfn "$target" "$LIVE.next"
 mv -T "$LIVE.next" "$LIVE"
 sudo -n /usr/bin/systemctl restart "$SERVICE"

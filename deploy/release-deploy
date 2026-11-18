@@ -61,6 +61,13 @@ for path in "$REPO" "$RELEASES" "$SHARED/.env" "$SHARED/data" "$DB" "$NODE_PREFI
         exit 1
     fi
 done
+# The app runs as its own user (heckled) and this script as joncphillips. The
+# app writes data/ and this script reads the database from it, so data/ must
+# belong to the heckled group and be reachable here (README.md, Deploy).
+if [ "$(stat -c %G "$SHARED/data")" != heckled ] || [ ! -w "$SHARED/data" ] || [ ! -r "$DB" ]; then
+    echo "$SHARED/data must be group heckled, writable by $(id -un), and $DB readable (README.md, Deploy)." >&2
+    exit 1
+fi
 if [ -e "$LIVE" ] && [ ! -L "$LIVE" ] && ! $PREPARE; then
     echo "$LIVE is not a symlink to a release yet; build one with --prepare and switch to it by hand." >&2
     exit 1
@@ -150,6 +157,12 @@ DATABASE_PATH="$SCRATCH/build.db" NODE_OPTIONS="--max-old-space-size=4096" NEXT_
 npm run bundle 9>&-
 [ -f .next/standalone/server.js ] || { echo "The build left no .next/standalone/server.js." >&2; false; }
 rm -f .next/standalone/.env .next/standalone/.env.*
+# The image optimizer caches into .next/cache at runtime, as the app's user
+# (heckled): the one folder in a release that group may write.
+mkdir -p .next/standalone/.next/cache
+chgrp -R heckled .next/standalone/.next/cache
+chmod -R g+rwX .next/standalone/.next/cache
+find .next/standalone/.next/cache -type d -exec chmod g+s {} +
 ln -s "$SHARED/data" data
 
 echo "Checking the new build on a spare port, against a copy of the database..."
